@@ -287,6 +287,12 @@ export interface GameState {
   tutorialStep: number
   /** 新手引导是否已结束（跳过或走完） */
   tutorialDone: boolean
+  /** 已经看过分段引导的功能 id 列表 */
+  seenIntros: string[]
+  /** 当前正在播放的功能引导 id；null = 没有 */
+  activeIntro: string | null
+  /** 当前功能引导播放到第几步 */
+  introStep: number
   /** 战区据点归属；当前原型使用本地 AI 对手，联机版替换为服务端快照。 */
   warfrontNodes: Record<string, WarfrontNodeState>
   /** 当前赛季的个人战功 */

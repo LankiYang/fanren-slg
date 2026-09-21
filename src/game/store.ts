@@ -22,7 +22,7 @@ import {
   buildCostFactor, buildSpeedFactor,
 } from './compute'
 import { QUESTS, questReward } from './quests'
-import { TUTORIAL } from './tutorial'
+import { TUTORIAL, FEATURE_INTRO } from './tutorial'
 import {
   GONGFA_MAP, gongfaCost, gongfaTimeMs,
   PILL_MAP, pillCost, type PillKey,
@@ -143,6 +143,9 @@ function initialState(): GameState {
     formation: { kuilei: 0, yushou: 0, fuxiu: 0 },
     tutorialStep: 0,
     tutorialDone: false,
+    seenIntros: [],
+    activeIntro: null,
+    introStep: 0,
     warfrontNodes: initialWarfrontNodes(),
     warfrontScore: 0,
     warfrontSectScore: 0,
@@ -188,6 +191,9 @@ function loadState(): GameState {
       formation: { ...base.formation, ...parsed.formation },
       tutorialStep: parsed.tutorialStep ?? base.tutorialStep,
       tutorialDone: parsed.tutorialDone ?? base.tutorialDone,
+      seenIntros: parsed.seenIntros ?? base.seenIntros,
+      activeIntro: null,
+      introStep: 0,
       warfrontNodes: { ...base.warfrontNodes, ...(parsed.warfrontNodes ?? {}) },
       warfrontScore: parsed.warfrontScore ?? base.warfrontScore,
       warfrontSectScore: parsed.warfrontSectScore ?? base.warfrontSectScore,
@@ -275,6 +281,9 @@ interface Store extends GameState {
   buyExpeditionShop: (id: string) => Result
   nextTutorialStep: () => void
   skipTutorial: () => void
+  maybeStartIntro: (id: string) => void
+  nextIntroStep: () => void
+  skipIntro: () => void
   reset: () => void
 }
 
@@ -1119,6 +1128,35 @@ export const useGame = create<Store>((set, get) => ({
     persist(get())
   },
 
+  // 功能解锁分段引导：开局教程结束后，玩家第一次真正看到某个功能面板时才播放，
+  // 同一时间只放一段（activeIntro 非空就直接跳过），避免多个解锁挤在一起连环打断。
+  maybeStartIntro: (id) => {
+    const s = get()
+    if (!s.tutorialDone || s.activeIntro || s.seenIntros.includes(id)) return
+    if (!FEATURE_INTRO[id as keyof typeof FEATURE_INTRO]?.length) return
+    set({ activeIntro: id, introStep: 0 })
+  },
+
+  nextIntroStep: () => {
+    const s = get()
+    if (!s.activeIntro) return
+    const steps = FEATURE_INTRO[s.activeIntro as keyof typeof FEATURE_INTRO] ?? []
+    const next = s.introStep + 1
+    if (next >= steps.length) {
+      set({ seenIntros: [...s.seenIntros, s.activeIntro], activeIntro: null, introStep: 0 })
+    } else {
+      set({ introStep: next })
+    }
+    persist(get())
+  },
+
+  skipIntro: () => {
+    const s = get()
+    if (!s.activeIntro) return
+    set({ seenIntros: [...s.seenIntros, s.activeIntro], activeIntro: null, introStep: 0 })
+    persist(get())
+  },
+
   reset: () => {
     localStorage.removeItem(SAVE_KEY)
     set({ ...initialState(), offlineReport: null })
@@ -1139,7 +1177,7 @@ function persist(s: GameState) {
       gongfa: s.gongfa, gongfaResearching: s.gongfaResearching,
       pills: s.pills, pillActive: s.pillActive, pillCrafting: s.pillCrafting,
       artifacts: s.artifacts, formation: s.formation,
-      tutorialStep: s.tutorialStep, tutorialDone: s.tutorialDone,
+      tutorialStep: s.tutorialStep, tutorialDone: s.tutorialDone, seenIntros: s.seenIntros,
       warfrontNodes: s.warfrontNodes, warfrontScore: s.warfrontScore,
       warfrontSectScore: s.warfrontSectScore, warfrontCooldownUntil: s.warfrontCooldownUntil,
       warfrontTactic: s.warfrontTactic,

@@ -94,7 +94,7 @@ export const TUTORIAL: TutorialStep[] = [
     id: 'intro-tabs',
     target: '.tabbar',
     pose: 'point',
-    text: '底下五处：演武场练兵、秘境历练、修士调度、宗门议事。眼下尚未开启，待你洞府有了品阶自会解禁。',
+    text: '底下几处：历练练兵、战区对垒、宗门议事。眼下尚未全部开启，待你洞府有了品阶自会解禁——到时我再与你细说。',
     advance: 'next',
     pad: 2,
   },
@@ -106,6 +106,89 @@ export const TUTORIAL: TutorialStep[] = [
     advance: 'next',
   },
 ]
+
+/**
+ * ═══ 功能解锁分段引导 ═══
+ *
+ * 开局的 TUTORIAL 只讲「不教就不会」的最初几步，后面十来个系统
+ * （演武/秘境/远征/修士/战区/宗门/藏经阁/炼丹房/炼器阁/寻道）
+ * 全部留到玩家真正解锁、第一次点进对应面板时才各自讲一遍，
+ * 而不是开局一口气塞给他。像加好友、宗门创建/加入这类通用交互
+ * （按钮文字已经自解释）不需要单独写一段。
+ *
+ * 每段都很短（1~2 步），复用同一套孔洞追踪/对话框定位逻辑，
+ * 只是脚本来源从 TUTORIAL 换成这里按 id 取。
+ */
+export type FeatureId =
+  | 'yanwu' | 'stage' | 'expedition' | 'cultivator'
+  | 'warfront' | 'sect' | 'cangjing' | 'liandan' | 'lianqi' | 'seek'
+
+export const FEATURE_INTRO: Record<FeatureId, TutorialStep[]> = {
+  yanwu: [
+    {
+      id: 'yanwu-1', target: null, pose: 'point', advance: 'next',
+      text: '演武场建成了。在此操练部众、扩充兵力——练出的人手会计入统兵上限，多多益善。',
+    },
+  ],
+  stage: [
+    {
+      id: 'stage-1', target: null, pose: 'point', advance: 'next',
+      text: '秘境按章推进，一关一关地打。若战力不足，未必是兵少，先看看编队克制对不对。',
+    },
+  ],
+  expedition: [
+    {
+      id: 'expedition-1', target: null, pose: 'point', advance: 'next',
+      text: '天机远征每日换图，远征令有限。稳妥推进兵损低，压榨路线收益更高但更险，量力而行。',
+    },
+  ],
+  cultivator: [
+    {
+      id: 'cultivator-1', target: null, pose: 'point', advance: 'next',
+      text: '秘境中招募到的修士都在这里培养。每人专精一种部众，练度越高，对应部众战力越强。',
+    },
+  ],
+  warfront: [
+    {
+      id: 'warfront-1', target: null, pose: 'point', advance: 'next',
+      text: '这是苍梧战区——所有修士共享的战场。占据点、抢资源、宗门互保，一举一动旁人都看得见。',
+    },
+    {
+      id: 'warfront-2', target: '.warfront-command-bar', pose: 'point', advance: 'next', pad: 4,
+      text: '选中据点后在这里调兵遣将。行军途中，其余玩家也能看到你的部队动向，小心埋伏。',
+    },
+  ],
+  sect: [
+    {
+      id: 'sect-1', target: null, pose: 'point', advance: 'next',
+      text: '宗门大殿建成，道友们可合力围猎结丹期凶兽。独木难成林，人多好办事。',
+    },
+  ],
+  cangjing: [
+    {
+      id: 'cangjing-1', target: null, pose: 'point', advance: 'next',
+      text: '藏经阁参研功法，同一时间只能研习一门，效果是永久的，选之前想清楚。',
+    },
+  ],
+  liandan: [
+    {
+      id: 'liandan-1', target: null, pose: 'point', advance: 'next',
+      text: '炼丹房炼的是限时增益，炼好了记得服用，放着不用等于白炼。',
+    },
+  ],
+  lianqi: [
+    {
+      id: 'lianqi-1', target: null, pose: 'point', advance: 'next',
+      text: '炼器阁锻造的法宝专精克制特定部众，配合你的主力兵种来选，别乱点。',
+    },
+  ],
+  seek: [
+    {
+      id: 'seek-1', target: '.seek-quick-button', pose: 'point', advance: 'next', pad: 4,
+      text: '这颗印记常驻洞府，点一下就能寻道，随机得修为和灵装。机缘攒满时收益最高，别浪费。',
+    },
+  ],
+}
 
 /**
  * 引导 NPC 名号。

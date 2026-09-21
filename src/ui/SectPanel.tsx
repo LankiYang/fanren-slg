@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { RESOURCE_META } from '../game/data'
 import { BOSS, bossHp } from '../game/balance'
 import type { BossReport, ResourceKey } from '../game/types'
@@ -12,10 +12,13 @@ export function SectPanel({ now }: { now: number }) {
   const challengeBoss = useGame(x => x.challengeBoss)
   const bossReadyAt = useGame(x => x.bossReadyAt)
   const unlockQueue = useGame(x => x.unlockQueue)
+  const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [report, setReport] = useState<BossReport | null>(null)
   const [hint, setHint] = useState('')
 
   const built = s.buildings.zongmen.level > 0
+
+  useEffect(() => { if (built) maybeStartIntro('sect') }, [built, maybeStartIntro])
   const readyAt = bossReadyAt()
   const onCooldown = now < readyAt
   const hp = bossHp(s.buildings.dongfu.level)
@@ -82,16 +85,6 @@ export function SectPanel({ now }: { now: number }) {
           >
             {s.queueSlots >= 2 ? '已开辟' : '开辟'}
           </button>
-        </div>
-      </div>
-
-      <div className="section-title">尚未开放</div>
-      <div className="card locked-card">
-        <div className="card-body">
-          <div className="card-meta">
-            宗门排名、跨域宗门战、同门互助加速等需要联机后端支撑，
-            属二期范围（见 README）。当前为单机原型，同门伤害由 NPC 按固定比例模拟。
-          </div>
         </div>
       </div>
     </div>

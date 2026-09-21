@@ -1,7 +1,8 @@
-import type { CSSProperties, ReactNode } from 'react'
+import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { TROOP_MAP } from '../game/data'
 import { WARFRONT_NODE_MAP, WARFRONT_NODES } from '../game/warfront'
 import type { OnlineNodeState, WarfrontSnapshot } from '../online/contracts'
-import { fmt } from './util'
+import { fmt, sprite } from './util'
 
 interface WarfrontMapProps {
   snapshot: WarfrontSnapshot
@@ -17,6 +18,7 @@ export function WarfrontMap({ snapshot, selectedKey, now, onSelect, command }: W
   const ownArmy = armies.find(army => army.isMine)
   const destination = ownArmy ? WARFRONT_NODE_MAP[ownArmy.destinationKey ?? ''] : null
   const mapPosition = snapshot.player.mapPosition ?? { x: 50, y: 94 }
+  const justCaptured = useCaptureFlash(snapshot.nodes)
 
   return (
     <section className="warfront-map-shell" aria-label="苍梧秘境共享战争地图">
@@ -58,11 +60,13 @@ export function WarfrontMap({ snapshot, selectedKey, now, onSelect, command }: W
         {WARFRONT_NODES.map(node => {
           const state = nodeState.get(node.key)
           if (!state) return null
-          return <MapNode key={node.key} nodeKey={node.key} state={state} mySectId={snapshot.player.sectId} selected={selectedKey === node.key} onSelect={onSelect} />
+          return <MapNode key={node.key} nodeKey={node.key} state={state} mySectId={snapshot.player.sectId} selected={selectedKey === node.key} justCaptured={justCaptured.has(node.key)} onSelect={onSelect} />
         })}
 
         {armies.map(army => {
           const remaining = Math.max(0, (army.arriveAt ?? now) - now)
+          const total = Math.max(1, (army.arriveAt ?? now) - (army.startedAt ?? now))
+          const progress = Math.max(0, Math.min(1, (now - (army.startedAt ?? now)) / total))
           const armyDestination = WARFRONT_NODE_MAP[army.destinationKey ?? '']
           return (
             <div
@@ -75,6 +79,7 @@ export function WarfrontMap({ snapshot, selectedKey, now, onSelect, command }: W
               <div className="warfront-army-glyph"><span>⚑</span></div>
               <div className="warfront-army-label">{army.isMine ? '我的军队' : army.name}</div>
               <div className="warfront-army-meta">{army.deployed} 人 · {Math.ceil(remaining / 1000)}s</div>
+              <div className="warfront-army-progress"><i style={{ width: `${progress * 100}%` }} /></div>
             </div>
           )
         })}
@@ -82,7 +87,11 @@ export function WarfrontMap({ snapshot, selectedKey, now, onSelect, command }: W
         {ownArmy && destination && (
           <div className="warfront-march-status">
             <span className="warfront-status-dot" />
-            <div><b>行军至 {destination.name}</b><small>抵达后才会在据点交战 · {formatRemaining(ownArmy.arriveAt ?? now, now)}</small></div>
+            <div className="warfront-march-status-body">
+              <b>行军至 {destination.name}</b>
+              <small>抵达后才会在据点交战 · {formatRemaining(ownArmy.arriveAt ?? now, now)}</small>
+              <div className="warfront-march-progress"><i style={{ width: `${marchProgress(ownArmy, now) * 100}%` }} /></div>
+            </div>
           </div>
         )}
       </div>
@@ -97,16 +106,17 @@ export function WarfrontMap({ snapshot, selectedKey, now, onSelect, command }: W
   )
 }
 
-function MapNode({ nodeKey, state, mySectId, selected, onSelect }: {
+function MapNode({ nodeKey, state, mySectId, selected, justCaptured, onSelect }: {
   nodeKey: string
   state: OnlineNodeState
   mySectId: string
   selected: boolean
+  justCaptured: boolean
   onSelect: (key: string) => void
 }) {
   const def = WARFRONT_NODE_MAP[nodeKey]
   const relation = state.ownerSectId ? (state.ownerSectId === mySectId ? 'mine' : 'rival') : 'neutral'
-  const className = `warfront-map-node ${relation}${selected ? ' selected' : ''}`
+  const className = `warfront-map-node ${relation}${selected ? ' selected' : ''}${justCaptured ? ' captured' : ''}`
   return (
     <button
       type="button"
@@ -115,12 +125,40 @@ function MapNode({ nodeKey, state, mySectId, selected, onSelect }: {
       onClick={() => onSelect(nodeKey)}
       aria-label={`${def.name}，${state.ownerSectName ?? '秘境守军'}，守军 ${state.garrisonTotal}`}
     >
-      <span className="warfront-node-ring"><span>{def.kind.slice(0, 1)}</span></span>
+      <span className="warfront-node-ring"><img src={sprite(TROOP_MAP[state.guardTroop].sprite)} alt={TROOP_MAP[state.guardTroop].name} /></span>
       <span className="warfront-node-copy"><b>{def.name}</b><small>{state.ownerSectName ?? '秘境守军'}</small></span>
       <span className="warfront-node-guard">守军 {fmt(state.garrisonTotal)}</span>
       {state.ownerSectId && <span className="warfront-node-banner">⚑</span>}
     </button>
   )
+}
+
+/** 追踪据点归属变化，短暂标记为 captured 以触发一次金光闪烁；不改变任何领域数据。 */
+function useCaptureFlash(nodes: OnlineNodeState[]): Set<string> {
+  const prevOwners = useRef<Map<string, string | null> | null>(null)
+  const [flashed, setFlashed] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    const prev = prevOwners.current
+    const next = new Map(nodes.map(node => [node.key, node.ownerSectId]))
+    prevOwners.current = next
+    if (!prev) return
+    const changed = nodes.filter(node => prev.has(node.key) && prev.get(node.key) !== node.ownerSectId).map(node => node.key)
+    if (changed.length === 0) return
+    setFlashed(current => new Set([...current, ...changed]))
+    const timer = window.setTimeout(() => {
+      setFlashed(current => { const next = new Set(current); changed.forEach(key => next.delete(key)); return next })
+    }, 1500)
+    return () => window.clearTimeout(timer)
+  }, [nodes])
+
+  return flashed
+}
+
+function marchProgress(army: { startedAt: number | null; arriveAt: number | null }, now: number): number {
+  const start = army.startedAt ?? now
+  const total = Math.max(1, (army.arriveAt ?? now) - start)
+  return Math.max(0, Math.min(1, (now - start) / total))
 }
 
 function pointStyle(point: { x: number; y: number }): CSSProperties {

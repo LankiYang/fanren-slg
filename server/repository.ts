@@ -3,6 +3,7 @@ import { dirname, resolve } from 'node:path'
 import type { ServerState } from './model'
 import { WARFRONT_NODE_MAP, WARFRONT_NODES, WARFRONT_SPAWN_POINTS } from '../src/game/warfront'
 import { defaultBattleProfile } from '../src/game/compute'
+import { ensureBots, reassignHumansOutOfAiSect } from './domain'
 
 const DEFAULT_PATH = resolve(process.cwd(), 'server/data/state.json')
 
@@ -24,7 +25,7 @@ export function createInitialState(): ServerState {
     { id: 'sect-cangwu', name: '苍梧宗' },
     { id: 'sect-liuyun', name: '流云会' },
   ]
-  return {
+  const state: ServerState = {
     schemaVersion: 4,
     seasonId: 's1-cangwu',
     seasonName: '第 1 赛季 · 苍梧秘境',
@@ -46,6 +47,9 @@ export function createInitialState(): ServerState {
     friendRequests: {},
     friendships: {},
   }
+  // 苍梧宗常驻电脑玩家，保证没有真人同场时战区也不是一张死地图。
+  ensureBots(state)
+  return state
 }
 
 export class JsonRepository implements StateRepository {
@@ -91,9 +95,29 @@ export class JsonRepository implements StateRepository {
       await mkdir(dirname(target), { recursive: true })
       const temp = `${target}.tmp`
       await writeFile(temp, serialized, 'utf8')
-      await rename(temp, target)
+      await renameWithRetry(temp, target)
     })
     await this.writeQueue
+  }
+}
+
+/**
+ * Windows 上覆盖写一个已存在的文件（尤其是 OneDrive/云盘同步的目录里，这个项目的
+ * server/data 正好在 Desktop 下）时，同步引擎或杀软会短暂持有目标文件句柄，
+ * 导致 rename 抛 EPERM/EBUSY——不是数据损坏，几十毫秒后重试基本都能成功。
+ * 实测：战区每次行动都会触发一次 save，之前没有重试时这个 EPERM 会直接把整个
+ * 请求做成 500，前端就看到「多人服务器暂时不可达」，看起来像功能坏了。
+ */
+async function renameWithRetry(from: string, to: string, attempts = 8): Promise<void> {
+  for (let attempt = 1; attempt <= attempts; attempt += 1) {
+    try {
+      await rename(from, to)
+      return
+    } catch (error) {
+      const code = (error as NodeJS.ErrnoException).code
+      if (attempt === attempts || (code !== 'EPERM' && code !== 'EBUSY')) throw error
+      await new Promise(resolve => setTimeout(resolve, 30 * attempt))
+    }
   }
 }
 
@@ -109,6 +133,8 @@ export function hydrateState(state: ServerState): ServerState {
     player.battleProfile = player.battleProfile ?? defaultBattleProfile()
     player.profileUpdatedAt = Number.isFinite(player.profileUpdatedAt) ? player.profileUpdatedAt : 0
     player.lastSeenAt = Number.isFinite(player.lastSeenAt) ? player.lastSeenAt : 0
+    player.isBot = player.isBot ?? false
+    player.nextActionAt = Number.isFinite(player.nextActionAt) ? player.nextActionAt : 0
     if (player.march && (!Array.isArray(player.march.path) || player.march.path.length < 2)) {
       player.march.path = [player.march.from, WARFRONT_NODE_MAP[player.march.destinationKey]?.position ?? player.march.from]
     }
@@ -122,5 +148,8 @@ export function hydrateState(state: ServerState): ServerState {
   state.idempotency = state.idempotency ?? {}
   state.friendRequests = state.friendRequests ?? {}
   state.friendships = state.friendships ?? {}
+  // 老存档可能在 AI 宗门加入前就有真人落在这个宗门里，先迁走再补齐机器人。
+  reassignHumansOutOfAiSect(state)
+  ensureBots(state)
   return state
 }

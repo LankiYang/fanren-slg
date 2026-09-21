@@ -6,11 +6,9 @@ import { TopBar } from './ui/TopBar'
 import { Scene } from './ui/Scene'
 import { Sheet, Cost } from './ui/Sheet'
 import { BuildingPanel } from './ui/BuildingPanel'
-import { TroopList, CultivatorList } from './ui/ArmyPanel'
-import { StagePanel } from './ui/StagePanel'
 import { WarfrontPanel } from './ui/WarfrontPanel'
 import { SectPanel } from './ui/SectPanel'
-import { ExpeditionPanel } from './ui/ExpeditionPanel'
+import { PracticePanel } from './ui/PracticePanel'
 import { OfflineSheet } from './ui/OfflineSheet'
 import { QuestPanel } from './ui/QuestPanel'
 import { Tutorial } from './ui/Tutorial'
@@ -21,7 +19,7 @@ import { CharacterSelect } from './ui/CharacterSelect'
 import { SeekPanel } from './ui/SeekPanel'
 import { cultivationRequirement } from './game/seek'
 
-type Tab = 'home' | 'army' | 'stage' | 'expedition' | 'warfront' | 'cultivator' | 'sect'
+type Tab = 'home' | 'practice' | 'warfront' | 'sect'
 
 export default function App() {
   const tick = useGame(x => x.tick)
@@ -52,31 +50,35 @@ export default function App() {
       <TopBar onBreakthrough={() => setShowBreak(true)} />
 
       <div className="scene-wrap">
-        <Scene now={now} onPick={k => setPicked(k)} />
+        {tab === 'warfront' ? (
+          // 战区是玩家投入最重的系统，给它整屏空间而不是挤在 72% 高的弹层里。
+          <WarfrontPanel now={now} />
+        ) : (
+          <>
+            <Scene now={now} onPick={k => setPicked(k)} />
 
-        <SeekPanel />
+            <SeekPanel />
 
-        {/* 任务追踪器：常驻显示「下一步该做什么」，兼作新手引导 */}
-        {quest && (
-          <button
-            className={'quest-track' + (questDone ? ' ready' : '')}
-            onClick={() => setShowQuests(true)}
-          >
-            <span className="quest-track-label">{questDone ? '✦ 可领取' : '当前目标'}</span>
-            <span className="quest-track-name">{quest.name}</span>
-            <span className="quest-track-desc">{quest.desc}</span>
-          </button>
+            {/* 任务追踪器：常驻显示「下一步该做什么」，兼作新手引导 */}
+            {quest && (
+              <button
+                className={'quest-track' + (questDone ? ' ready' : '')}
+                onClick={() => setShowQuests(true)}
+              >
+                <span className="quest-track-label">{questDone ? '✦ 可领取' : '当前目标'}</span>
+                <span className="quest-track-name">{quest.name}</span>
+                <span className="quest-track-desc">{quest.desc}</span>
+              </button>
+            )}
+          </>
         )}
       </div>
 
       <div className="tabbar">
         {([
           ['home', 'ui/tab-home.webp', '洞府'],
-          ['army', 'ui/tab-army.webp', '演武'],
-          ['stage', 'ui/tab-stage.webp', '秘境'],
-          ['expedition', 'ui/tab-stage.webp', '远征'],
-          ['warfront', 'ui/tab-sect.webp', '战区'],
-          ['cultivator', 'ui/tab-cultivator.webp', '修士'],
+          ['practice', 'ui/tab-army.webp', '历练'],
+          ['warfront', 'ui/tab-stage.webp', '战区'],
           ['sect', 'ui/tab-sect.webp', '宗门'],
         ] as [Tab, string, string][]).map(([k, ico, label]) => (
           <button
@@ -98,20 +100,8 @@ export default function App() {
         <BuildingPanel bkey={picked} now={now} onClose={() => setPicked(null)} />
       )}
 
-      {tab === 'army' && (
-        <Sheet title="演武场" onClose={() => setTab('home')}><TroopList /></Sheet>
-      )}
-      {tab === 'stage' && (
-        <Sheet title="秘境" onClose={() => setTab('home')}><StagePanel /></Sheet>
-      )}
-      {tab === 'expedition' && (
-        <Sheet title="天机远征" sub="每日轮换 · 28 天游历" onClose={() => setTab('home')}><ExpeditionPanel now={now} /></Sheet>
-      )}
-      {tab === 'warfront' && (
-        <Sheet title="赛季战区" onClose={() => setTab('home')}><WarfrontPanel now={now} /></Sheet>
-      )}
-      {tab === 'cultivator' && (
-        <Sheet title="修士" onClose={() => setTab('home')}><CultivatorList /></Sheet>
+      {tab === 'practice' && (
+        <Sheet title="历练" sub="演武 · 秘境 · 远征 · 修士" onClose={() => setTab('home')}><PracticePanel now={now} /></Sheet>
       )}
       {tab === 'sect' && (
         <Sheet title="宗门" onClose={() => setTab('home')}><SectPanel now={now} /></Sheet>

@@ -113,6 +113,8 @@ export interface OnlineBattleReport extends WarfrontReport {
   defenderName: string
   createdAt: number
   troopsAfter: Record<TroopKey, number>
+  /** 据点被攻破时，为每个曾驻防的宗门贡献者（含原据点主人）各生成一条通知；不填即为常规交战战报。 */
+  kind?: 'battle' | 'garrisonLoss'
 }
 
 export interface WarfrontSnapshot {

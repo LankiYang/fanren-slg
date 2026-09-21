@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   GONGFA, GONGFA_BRANCHES, GONGFA_MAP, gongfaCost, gongfaTimeMs,
   PILLS, PILL_MAP, pillCost,
@@ -17,11 +17,14 @@ import { sprite, fmt, fmtTime } from './util'
 export function GongfaPanel({ now }: { now: number }) {
   const s = useGame()
   const research = useGame(x => x.researchGongfa)
+  const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [hint, setHint] = useState('')
   const [branch, setBranch] = useState<GongfaBranch>('gather')
 
   const cangjing = s.buildings.cangjing.level
   const busy = s.gongfaResearching
+
+  useEffect(() => { maybeStartIntro('cangjing') }, [maybeStartIntro])
 
   return (
     <div>
@@ -109,11 +112,14 @@ export function PillPanel({ now }: { now: number }) {
   const craft = useGame(x => x.craftPill)
   const collect = useGame(x => x.collectPill)
   const use = useGame(x => x.usePill)
+  const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [hint, setHint] = useState('')
 
   const liandan = s.buildings.liandan.level
   const crafting = s.pillCrafting
   const cost = pillCost(Math.max(1, liandan))
+
+  useEffect(() => { maybeStartIntro('liandan') }, [maybeStartIntro])
 
   return (
     <div>
@@ -211,7 +217,10 @@ export function PillPanel({ now }: { now: number }) {
 export function ArtifactPanel() {
   const s = useGame()
   const forge = useGame(x => x.forgeArtifact)
+  const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [hint, setHint] = useState('')
+
+  useEffect(() => { maybeStartIntro('lianqi') }, [maybeStartIntro])
 
   const lianqi = s.buildings.lianqi.level
 

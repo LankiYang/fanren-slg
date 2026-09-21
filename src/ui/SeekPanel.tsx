@@ -16,6 +16,8 @@ export function SeekPanel() {
   const seekNow = useGame(state => state.seekNow)
   const temperEquipment = useGame(state => state.temperEquipment)
   const claimSeekMilestone = useGame(state => state.claimSeekMilestone)
+  const maybeStartIntro = useGame(state => state.maybeStartIntro)
+  const tutorialDone = useGame(state => state.tutorialDone)
   const [report, setReport] = useState<SeekDrop | null>(null)
   const [hint, setHint] = useState('')
   // 主城优先给建筑交互让位；详细养成信息按需展开。
@@ -26,6 +28,11 @@ export function SeekPanel() {
     const timer = window.setTimeout(() => setReport(null), 4_600)
     return () => window.clearTimeout(timer)
   }, [report])
+
+  // SeekPanel 从开局就常驻挂载（不像其他面板要等玩家点进去），
+  // 所以要等开局引导 tutorialDone 变 true 后才补一次触发，否则这个 effect
+  // 只会在挂载的那一瞬间跑一次，永远赶不上开局引导结束的时刻。
+  useEffect(() => { maybeStartIntro('seek') }, [tutorialDone, maybeStartIntro])
 
   const need = cultivationRequirement(s.realm)
   const cultivationProgress = Math.min(1, s.seek.cultivation / Math.max(1, need))

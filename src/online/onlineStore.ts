@@ -70,8 +70,10 @@ export const useOnline = create<OnlineState>((set, get) => ({
     try {
       const snapshot = await fetchWarfront()
       const previous = get().snapshot
+      // garrisonLoss 是补发的驻防阵亡通知，没有真实的对战双方可供演出，
+      // 不能当成 lastReport 弹出 WarfrontBattleScene。
       const freshReport = previous
-        ? snapshot.reports.find(report => !previous.reports.some(old => old.id === report.id)) ?? null
+        ? snapshot.reports.find(report => report.kind !== 'garrisonLoss' && !previous.reports.some(old => old.id === report.id)) ?? null
         : null
       set({ status: 'online', snapshot, error: '', ...(freshReport ? { lastReport: freshReport } : {}) })
     } catch (error) {

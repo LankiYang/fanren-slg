@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { TUTORIAL, GUIDE_NAME } from '../game/tutorial'
+import { TUTORIAL, FEATURE_INTRO, GUIDE_NAME } from '../game/tutorial'
 import { useGame } from '../game/store'
 import { sprite } from './util'
 
@@ -29,13 +29,24 @@ export function Tutorial() {
   const step = useGame(x => x.tutorialStep)
   const nextStep = useGame(x => x.nextTutorialStep)
   const skip = useGame(x => x.skipTutorial)
+  const activeIntroId = useGame(x => x.activeIntro)
+  const introStep = useGame(x => x.introStep)
+  const nextIntro = useGame(x => x.nextIntroStep)
+  const skipIntro = useGame(x => x.skipIntro)
   const [hole, setHole] = useState<Hole | null>(null)
   const [layout, setLayout] = useState<DialogLayout>({ mode: 'bottom' })
   const rafRef = useRef<number>(0)
   const dialogRef = useRef<HTMLDivElement>(null)
 
-  const cur = TUTORIAL[step]
-  const active = !done && !!cur
+  // 开局引导没走完时优先播它；走完之后才轮到功能解锁的分段引导，脚本来源不同但共用同一套渲染/定位逻辑
+  const onboarding = !done
+  const introSteps = activeIntroId ? FEATURE_INTRO[activeIntroId as keyof typeof FEATURE_INTRO] : undefined
+  const cur = onboarding ? TUTORIAL[step] : introSteps?.[introStep]
+  const curLen = onboarding ? TUTORIAL.length : (introSteps?.length ?? 0)
+  const curStep = onboarding ? step : introStep
+  const advance = onboarding ? nextStep : nextIntro
+  const doSkip = onboarding ? skip : skipIntro
+  const active = !!cur
 
   // 目标位置会随面板开合、滚动而变，所以要持续跟随，不是算一次就完。
   //
@@ -106,7 +117,7 @@ export function Tutorial() {
       cancelAnimationFrame(rafRef.current)
       clearInterval(timer)
     }
-  }, [active, step, cur])
+  }, [active, curStep, cur])
 
   // advance='click' 时，监听目标元素被点中就推进
   useEffect(() => {
@@ -115,18 +126,18 @@ export function Tutorial() {
       const el = document.querySelector(cur.target!)
       if (el && e.target instanceof Node && el.contains(e.target)) {
         // 让目标自己的 onClick 先跑完，再推进步骤
-        setTimeout(() => nextStep(), 0)
+        setTimeout(() => advance(), 0)
       }
     }
     document.addEventListener('click', onClick, true)
     return () => document.removeEventListener('click', onClick, true)
-  }, [active, step, cur, nextStep])
+  }, [active, curStep, cur, advance])
 
   if (!active) return null
 
   const isClickStep = cur.advance === 'click' && !!cur.target
   // 纯对话步骤：整屏可点推进；点击步骤：只有孔洞可点，遮罩吞掉点击
-  const maskClick = isClickStep ? undefined : () => nextStep()
+  const maskClick = isClickStep ? undefined : () => advance()
 
   const pinnedTop = layout.mode === 'top'
   const dialogStyle = layout.mode === 'above' ? { top: layout.top, bottom: 'auto' as const } : undefined
@@ -137,7 +148,7 @@ export function Tutorial() {
           贴目标上方（'above'）时对话框本来就不占最顶那块空间，不用挪 */}
       <button
         className={'tut-skip' + (pinnedTop ? ' bottom' : '')}
-        onClick={e => { e.stopPropagation(); skip() }}
+        onClick={e => { e.stopPropagation(); doSkip() }}
       >
         跳过引导
       </button>
@@ -162,7 +173,7 @@ export function Tutorial() {
         ref={dialogRef}
         className={'tut-dialog' + (pinnedTop ? ' top' : '')}
         style={dialogStyle}
-        onClick={isClickStep ? undefined : () => nextStep()}
+        onClick={isClickStep ? undefined : () => advance()}
       >
         <img
           className="tut-portrait"
@@ -173,7 +184,7 @@ export function Tutorial() {
           <div className="tut-name">{GUIDE_NAME}</div>
           <div className="tut-text">{cur.text}</div>
           <div className="tut-foot">
-            <span className="tut-progress">{step + 1}/{TUTORIAL.length}</span>
+            <span className="tut-progress">{curStep + 1}/{curLen}</span>
             {isClickStep
               ? <span className="tut-hint-click">▸ 点击高亮处继续</span>
               : <span className="tut-next">继续 ▸</span>}

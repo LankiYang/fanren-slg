@@ -4,8 +4,8 @@ import { ARTIFACT_MAP, GONGFA_MAP } from '../src/game/systems'
 import { CULTIVATOR_MAX_LEVEL, TUNE } from '../src/game/balance'
 import { battlePowerFromBattleProfile, defaultBattleProfile, formationPowerFromBattleProfile } from '../src/game/compute'
 import { calculateBattleLosses } from '../src/game/penalty'
-import type { BattleProfile, Resources, TroopKey } from '../src/game/types'
-import { WARFRONT_NODE_MAP, WARFRONT_NODES, WARFRONT_SPAWN_POINTS, WARFRONT_TACTICS } from '../src/game/warfront'
+import type { BattleProfile, Resources, TroopKey, WarfrontTactic } from '../src/game/types'
+import { WARFRONT_NODE_MAP, WARFRONT_NODES, WARFRONT_SPAWN_POINTS, WARFRONT_TACTICS, type WarfrontNodeDef } from '../src/game/warfront'
 import { ONLINE_SCHEMA_VERSION, type AttackPayload, type GarrisonPayload, type LeaderboardEntry, type MapPoint, type MarchPayload, type OnlineArmy, type OnlineBattleReport, type OnlineFriend, type OnlineFriendRequest, type OnlinePlayerSearch, type SyncBattleProfilePayload, type WarfrontSnapshot, type WithdrawPayload } from '../src/online/contracts'
 import type { ServerFriendRequest, ServerMarch, ServerNode, ServerPlayer, ServerState } from './model'
 
@@ -26,6 +26,18 @@ const FRIEND_ONLINE_WINDOW_MS = 15_000
 const PROFILE_TROOPS_MAX = 1_000_000
 const PROFILE_EQUIPMENT_MAX = 10_000
 
+// ═══ AI 宗门：没有真人同场时，战区不该是一张静止的地图 ═══
+// 苍梧宗在据点文案里本就是"苍梧宗主力"这种设定好的对手，直接把它做成常驻电脑宗门，
+// 真人访客的轮换分配跳过这个宗门id，机器人则固定归属于它。
+const AI_SECT_ID = 'sect-cangwu'
+const BOT_NAMES = ['苍梧游骑·甲', '苍梧游骑·乙', '苍梧游骑·丙', '苍梧游骑·丁']
+const BOT_STARTING_TROOPS = 150
+const BOT_TARGET_TROOPS = 300
+const BOT_ACTION_MIN_MS = 30_000
+const BOT_ACTION_MAX_MS = 75_000
+/** 机器人愿意出手的最低胜算：己方估算战力至少要达到守军战力的这个比例。 */
+const BOT_WIN_RATIO = 0.75
+
 export class DomainError extends Error {
   constructor(message: string, readonly status = 400, readonly code = 'INVALID_REQUEST') { super(message) }
 }
@@ -33,8 +45,9 @@ export class DomainError extends Error {
 export function createGuest(state: ServerState, requestedName?: string): ServerPlayer {
   state.playerSequence += 1
   const id = `p-${randomUUID()}`
-  const sects = Object.values(state.sects)
-  const sect = sects[(state.playerSequence - 1) % sects.length]
+  // AI 宗门只给机器人住，真人访客的轮换分配要跳过它，否则会被分进一个打不了的"队友"阵营。
+  const humanSects = Object.values(state.sects).filter(x => x.id !== AI_SECT_ID)
+  const sect = humanSects[(state.playerSequence - 1) % humanSects.length]
   const fallbackName = `散修${String(state.playerSequence).padStart(3, '0')}`
   const name = sanitizeName(requestedName) || fallbackName
   const player: ServerPlayer = {
@@ -54,9 +67,57 @@ export function createGuest(state: ServerState, requestedName?: string): ServerP
     profileUpdatedAt: Date.now(),
     createdAt: Date.now(),
     lastSeenAt: Date.now(),
+    isBot: false,
+    nextActionAt: 0,
   }
   state.players[id] = player
   return player
+}
+
+/** 幂等地把 AI 宗门的机器人补齐到位；已存在的机器人不会被重置。 */
+export function ensureBots(state: ServerState): void {
+  if (!state.sects[AI_SECT_ID]) return
+  const existing = Object.values(state.players).filter(p => p.isBot && p.sectId === AI_SECT_ID)
+  if (existing.length >= BOT_NAMES.length) return
+  const now = Date.now()
+  const base = spawnPositionForSect(AI_SECT_ID)
+  for (let i = existing.length; i < BOT_NAMES.length; i += 1) {
+    const id = `bot-${AI_SECT_ID}-${i}`
+    if (state.players[id]) continue
+    state.players[id] = {
+      id,
+      token: `bot-token-${id}`,
+      name: BOT_NAMES[i],
+      sectId: AI_SECT_ID,
+      score: 0,
+      troops: { kuilei: BOT_STARTING_TROOPS, yushou: BOT_STARTING_TROOPS, fuxiu: BOT_STARTING_TROOPS },
+      cooldownUntil: 0,
+      recruitReadyAt: 0,
+      warEnergy: WAR_ENERGY_MAX,
+      warEnergyUpdatedAt: now,
+      mapPosition: jitterPoint(base, i),
+      march: null,
+      // 给一个略高于新手起步的档案，让机器人是「有点分量但打得过」的对手，而不是纸片人或墙。
+      battleProfile: { ...defaultBattleProfile(), dongfuLevel: 3, realm: 1 },
+      profileUpdatedAt: now,
+      createdAt: now,
+      lastSeenAt: now,
+      isBot: true,
+      nextActionAt: now + randomInt(5_000, 20_000) + i * 4_000,
+    }
+  }
+}
+
+/** 迁移历史存档里误落在 AI 宗门的真人玩家（比如迁移前的老存档），把他们分回真人宗门。 */
+export function reassignHumansOutOfAiSect(state: ServerState): void {
+  const humanSects = Object.values(state.sects).filter(x => x.id !== AI_SECT_ID)
+  if (humanSects.length === 0) return
+  let cursor = 0
+  for (const player of Object.values(state.players)) {
+    if (player.isBot || player.sectId !== AI_SECT_ID) continue
+    player.sectId = humanSects[cursor % humanSects.length].id
+    cursor += 1
+  }
 }
 
 export function authenticate(state: ServerState, token: string | undefined): ServerPlayer {
@@ -136,7 +197,7 @@ export function searchPlayers(state: ServerState, player: ServerPlayer, rawQuery
   const query = rawQuery.trim().toLocaleLowerCase()
   const now = Date.now()
   return Object.values(state.players)
-    .filter(candidate => candidate.id !== player.id)
+    .filter(candidate => candidate.id !== player.id && !candidate.isBot)
     .filter(candidate => !onlineOnly || now - candidate.lastSeenAt < FRIEND_ONLINE_WINDOW_MS)
     .filter(candidate => !query || candidate.name.toLocaleLowerCase().includes(query) || candidate.id.toLocaleLowerCase().includes(query))
     .sort((a, b) => Number(now - b.lastSeenAt < FRIEND_ONLINE_WINDOW_MS) - Number(now - a.lastSeenAt < FRIEND_ONLINE_WINDOW_MS) || b.score - a.score || a.name.localeCompare(b.name, 'zh-CN'))
@@ -248,6 +309,73 @@ export function advanceWorld(state: ServerState, now: number): void {
     if (!active || active.arriveAt > now) continue
     resolveMarch(state, player, active)
   }
+  // 机器人的出征结算走的是上面同一条 resolveMarch，这里只负责「该不该派出新一波」。
+  for (const bot of Object.values(state.players)) {
+    if (!bot.isBot) continue
+    restoreWarEnergy(bot)
+    if (bot.march || now < bot.nextActionAt) continue
+    runBotTurn(state, bot, now)
+  }
+}
+
+/** 机器人的一次行动：手头兵力不够就先征募，再评估一个能打的据点出征；全程不抛错到调用方。 */
+function runBotTurn(state: ServerState, bot: ServerPlayer, now: number): void {
+  if (now >= bot.recruitReadyAt && sumTroops(bot.troops) < BOT_TARGET_TROOPS) {
+    try { recruit(bot) } catch { /* 征募冷却或已满，跳过 */ }
+  }
+  if (bot.warEnergy > 0 && now >= bot.cooldownUntil) {
+    const pick = chooseBotTarget(state, bot)
+    if (pick && sumTroops(pick.formation) > 0) {
+      try {
+        march(state, bot, { requestId: `bot-${randomUUID()}`, nodeKey: pick.def.key, tactic: 'raid', formation: pick.formation })
+      } catch { /* 目标在选定后状态又变了（比如刚被别人打下），这次就先按兵不动 */ }
+    }
+  }
+  bot.nextActionAt = now + randomInt(BOT_ACTION_MIN_MS, BOT_ACTION_MAX_MS)
+}
+
+/** 优先挑选胜算达标的据点；一个都打不过时，也会去咬眼下最弱的一个，保持地图上始终有威胁。 */
+function chooseBotTarget(state: ServerState, bot: ServerPlayer): { def: WarfrontNodeDef; formation: Record<TroopKey, number> } | null {
+  const candidates = WARFRONT_NODES
+    .map(def => ({ def, node: state.nodes[def.key] }))
+    .filter(({ node }) => node.ownerSectId !== bot.sectId)
+  if (candidates.length === 0) return null
+  const scored = candidates.map(({ def, node }) => {
+    const formation = botFormation(bot, node.guardTroop)
+    const power = calculatePower(bot.battleProfile, formation, node.guardTroop)
+    return { def, formation, ratio: power / Math.max(1, node.guardPower) }
+  })
+  const winnable = scored.filter(x => x.ratio >= BOT_WIN_RATIO)
+  const pool = winnable.length > 0 ? winnable : [scored.reduce((best, x) => (x.ratio > best.ratio ? x : best))]
+  return pool[Math.floor(Math.random() * pool.length)]
+}
+
+/** 服务端版的「一键择优」：按克制关系把手头兵力优先填进克制敌方兵种的槽位。 */
+function botFormation(bot: ServerPlayer, enemyTroop: TroopKey): Record<TroopKey, number> {
+  const keys = [...TROOP_KEYS].sort((a, b) => relationRank(a, enemyTroop) - relationRank(b, enemyTroop))
+  const result = emptyFormation()
+  let left = MAX_MARCH_TROOPS
+  for (const key of keys) {
+    const take = Math.min(bot.troops[key], left)
+    result[key] = take
+    left -= take
+  }
+  return result
+}
+
+function relationRank(key: TroopKey, enemy: TroopKey): number {
+  if (TROOP_MAP[key].counters === enemy) return 0
+  if (TROOP_MAP[enemy].counters === key) return 2
+  return 1
+}
+
+function jitterPoint(base: MapPoint, index: number): MapPoint {
+  const angle = (index / BOT_NAMES.length) * Math.PI * 2
+  return { x: base.x + Math.cos(angle) * 3, y: base.y + Math.sin(angle) * 3 }
+}
+
+function randomInt(min: number, max: number): number {
+  return Math.floor(min + Math.random() * (max - min))
 }
 
 function resolveMarch(state: ServerState, player: ServerPlayer, active: ServerMarch): void {
@@ -291,7 +419,7 @@ function resolveMarch(state: ServerState, player: ServerPlayer, active: ServerMa
   player.score += scoreGained
   state.sects[player.sectId].score += scoreGained
   if (win) {
-    occupyNode(node, player, survivors, myPower)
+    occupyNode(state, node, player, survivors, myPower, active.tactic)
     player.mapPosition = { ...def.position }
   } else {
     addFormation(player.troops, survivors)
@@ -393,7 +521,7 @@ export function attack(state: ServerState, player: ServerPlayer, payload: Attack
   player.cooldownUntil = now + ATTACK_COOLDOWN_MS
   state.sects[player.sectId].score += scoreGained
   const captured = win && node.ownerPlayerId !== player.id
-  if (win) occupyNode(node, player, survivorsOf(formation, player.troops), myPower)
+  if (win) occupyNode(state, node, player, survivorsOf(formation, player.troops), myPower, payload.tactic)
 
   const report: OnlineBattleReport = {
     id: `r-${randomUUID()}`,
@@ -491,7 +619,9 @@ export function joinSect(state: ServerState, player: ServerPlayer, sectId: strin
   player.sectId = sectId
 }
 
-function occupyNode(node: ServerNode, player: ServerPlayer, formation: Record<TroopKey, number>, power: number) {
+function occupyNode(state: ServerState, node: ServerNode, player: ServerPlayer, formation: Record<TroopKey, number>, power: number, tactic: WarfrontTactic) {
+  const previousContributors = node.garrisonContributors ?? {}
+  const nodeName = WARFRONT_NODE_MAP[node.key]?.name ?? node.key
   node.ownerPlayerId = player.id
   node.ownerSectId = player.sectId
   node.guardFormation = { ...formation }
@@ -499,6 +629,39 @@ function occupyNode(node: ServerNode, player: ServerPlayer, formation: Record<Tr
   node.guardTroop = strongestTroop(formation)
   node.guardPower = Math.max(240, Math.round(Math.max(basePower(player.battleProfile, formation) * 1.05, power * 0.68)))
   node.version += 1
+  // 据点换主会连带清空所有宗门贡献者的驻防（不止新主人自己那份），逐个补发战报，
+  // 否则除新主人外的驻防者会发现自己的援军无声消失，看不到任何记录。
+  for (const [contributorId, lostFormation] of Object.entries(previousContributors)) {
+    if (contributorId === player.id) continue
+    const lost = sumTroops(lostFormation)
+    if (lost <= 0) continue
+    const contributor = state.players[contributorId]
+    appendReport(state, {
+      id: `r-${randomUUID()}`,
+      requestId: `garrison-loss-${node.key}-${node.version}-${contributorId}`,
+      attackerId: player.id,
+      attackerName: player.name,
+      defenderPlayerId: contributorId,
+      defenderName: contributor?.name ?? '道友',
+      createdAt: Date.now(),
+      nodeKey: node.key,
+      nodeName,
+      enemyName: player.name,
+      enemyTroop: node.guardTroop,
+      tactic,
+      win: false,
+      myPower: power,
+      enemyPower: power,
+      formation: { ...lostFormation },
+      deployed: lost,
+      losses: lost,
+      scoreGained: 0,
+      captured: true,
+      gained: {},
+      troopsAfter: contributor ? { ...contributor.troops } : emptyFormation(),
+      kind: 'garrisonLoss',
+    })
+  }
 }
 
 function transferPlayerNodes(state: ServerState, player: ServerPlayer, nextSectId: string) {

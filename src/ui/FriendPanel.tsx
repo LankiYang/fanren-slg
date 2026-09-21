@@ -6,10 +6,9 @@ import { fmt } from './util'
 
 interface FriendPanelProps {
   snapshot: WarfrontSnapshot
-  onClose: () => void
 }
 
-export function FriendPanel({ snapshot, onClose }: FriendPanelProps) {
+export function FriendPanel({ snapshot }: FriendPanelProps) {
   const searchPlayers = useOnline(state => state.searchPlayers)
   const requestFriend = useOnline(state => state.requestFriend)
   const respondFriend = useOnline(state => state.respondFriend)
@@ -67,14 +66,6 @@ export function FriendPanel({ snapshot, onClose }: FriendPanelProps) {
 
   return (
     <section className="friend-panel" aria-label="好友系统">
-      <div className="friend-panel-head">
-        <div>
-          <span className="warfront-command-kicker">社交联络</span>
-          <b>好友 · {snapshot.friends.length}</b>
-        </div>
-        <button className="battle-skip" type="button" onClick={onClose}>收起</button>
-      </div>
-
       <div className="friend-online-head">
         <div><span className="friend-status-dot online" /><b>在线修士 · {onlinePlayers.length}</b><small>可直接发出好友申请</small></div>
         <button className="friend-refresh" type="button" onClick={() => void loadOnlinePlayers()} title="刷新在线修士" aria-label="刷新在线修士">↻</button>

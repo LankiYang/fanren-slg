@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { STAGES, TROOP_MAP, RESOURCE_META } from '../game/data'
 import type { ResourceKey } from '../game/types'
 import { useGame, battlePower } from '../game/store'
@@ -22,9 +22,12 @@ export function StagePanel() {
   const s = useGame()
   const challenge = useGame(x => x.challengeStage)
   const setFormation = useGame(x => x.setFormation)
+  const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [report, setReport] = useState<Report | null>(null)
   /** 点「挑战」先进编队界面，确认后才真正开打 */
   const [staging, setStaging] = useState<number | null>(null)
+
+  useEffect(() => { maybeStartIntro('stage') }, [maybeStartIntro])
 
   const chapters = [...new Set(STAGES.map(x => x.chapter))]
 

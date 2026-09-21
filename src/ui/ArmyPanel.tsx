@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { TROOPS, TROOP_MAP, CULTIVATORS, cultivatorCost, cultivatorBonus, CULTIVATOR_MAX_LEVEL } from '../game/data'
 import type { Resources } from '../game/types'
 import {
@@ -12,12 +12,15 @@ export function TroopList() {
   const s = useGame()
   const trainTroop = useGame(x => x.trainTroop)
   const maxTrainable = useGame(x => x.maxTrainable)
+  const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [hint, setHint] = useState('')
   const [batch, setBatch] = useState<number | 'max'>(10)
 
   const yanwuLv = s.buildings.yanwu.level
   const cap = currentTroopCap(s)
   const have = totalTroops(s)
+
+  useEffect(() => { if (yanwuLv > 0) maybeStartIntro('yanwu') }, [yanwuLv, maybeStartIntro])
 
   return (
     <div>
@@ -106,7 +109,10 @@ export function TroopList() {
 export function CultivatorList() {
   const s = useGame()
   const levelUp = useGame(x => x.levelUpCultivator)
+  const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [hint, setHint] = useState('')
+
+  useEffect(() => { maybeStartIntro('cultivator') }, [maybeStartIntro])
 
   return (
     <div>

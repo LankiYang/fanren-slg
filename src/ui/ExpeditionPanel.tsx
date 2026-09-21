@@ -5,6 +5,7 @@ import type { ExpeditionChoice, ExpeditionNodeKind, ExpeditionReport, ResourceKe
 import { battlePower, useGame } from '../game/store'
 import { Formation } from './Formation'
 import { ExpeditionBattleScene } from './ExpeditionBattleScene'
+import { Sheet } from './Sheet'
 import { fmt, fmtTime, sprite } from './util'
 
 const KIND_META: Record<ExpeditionNodeKind, { label: string; icon: string }> = {
@@ -23,13 +24,16 @@ export function ExpeditionPanel({ now }: { now: number }) {
   const claimWeekly = useGame(x => x.claimExpeditionWeekly)
   const claimSeason = useGame(x => x.claimExpeditionSeason)
   const buyShop = useGame(x => x.buyExpeditionShop)
+  const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [selectedId, setSelectedId] = useState('')
   const [choice, setChoice] = useState<ExpeditionChoice>('steady')
   const [report, setReport] = useState<ExpeditionReport | null>(null)
   const [sceneDone, setSceneDone] = useState(false)
   const [hint, setHint] = useState('')
+  const [showStats, setShowStats] = useState(false)
 
   useEffect(() => { refresh() }, [refresh])
+  useEffect(() => { maybeStartIntro('expedition') }, [maybeStartIntro])
 
   const available = useMemo(
     () => s.expeditionNodes.filter(node => node.depth === s.expeditionProgress && !node.resolved),
@@ -86,6 +90,7 @@ export function ExpeditionPanel({ now }: { now: number }) {
         <span>今日推进 <b>{Math.min(5, s.expeditionProgress)}/5</b></span>
         <span>赛季积分 <b>{fmt(s.expeditionScore)}</b></span>
         <span>远征币 <b className="expedition-currency">{fmt(s.expeditionCurrency)}</b></span>
+        <button className="btn-sub expedition-stats-btn" type="button" onClick={() => setShowStats(true)}>战绩 ▸</button>
       </div>
 
       <div className="expedition-route" aria-label="天机远征路线图">
@@ -172,59 +177,63 @@ export function ExpeditionPanel({ now }: { now: number }) {
         </section>
       )}
 
-      <div className="expedition-longterm">
-        <div className="section-title">本周里程碑 · {s.expeditionWeekScore} 分</div>
-        {EXPEDITION_WEEKLY_REWARDS.map(item => (
-          <MilestoneRow
-            key={item.id}
-            name={item.name}
-            need={item.need}
-            current={s.expeditionWeekScore}
-            claimed={s.expeditionWeeklyClaimed.includes(item.id)}
-            onClaim={() => { const result = claimWeekly(item.id); setHint(result.ok ? `已领取「${item.name}」` : result.reason ?? '') }}
-          />
-        ))}
+      {showStats && (
+        <Sheet title="远征战绩" sub="里程碑 · 商店 · 遗物" onClose={() => setShowStats(false)}>
+          <div className="expedition-longterm">
+            <div className="section-title">本周里程碑 · {s.expeditionWeekScore} 分</div>
+            {EXPEDITION_WEEKLY_REWARDS.map(item => (
+              <MilestoneRow
+                key={item.id}
+                name={item.name}
+                need={item.need}
+                current={s.expeditionWeekScore}
+                claimed={s.expeditionWeeklyClaimed.includes(item.id)}
+                onClaim={() => { const result = claimWeekly(item.id); setHint(result.ok ? `已领取「${item.name}」` : result.reason ?? '') }}
+              />
+            ))}
 
-        <div className="section-title">28 天游历 · {s.expeditionScore} 分</div>
-        {nextSeason && <div className="expedition-next-reward">下一档：{nextSeason.name} · 还需 {Math.max(0, nextSeason.need - s.expeditionScore)} 分</div>}
-        {EXPEDITION_SEASON_REWARDS.map(item => (
-          <MilestoneRow
-            key={item.id}
-            name={item.name + (item.relic ? ' · 遗物' : '')}
-            need={item.need}
-            current={s.expeditionScore}
-            claimed={s.expeditionSeasonRewards.includes(item.id)}
-            onClaim={() => { const result = claimSeason(item.id); setHint(result.ok ? `已领取「${item.name}」` : result.reason ?? '') }}
-          />
-        ))}
+            <div className="section-title">28 天游历 · {s.expeditionScore} 分</div>
+            {nextSeason && <div className="expedition-next-reward">下一档：{nextSeason.name} · 还需 {Math.max(0, nextSeason.need - s.expeditionScore)} 分</div>}
+            {EXPEDITION_SEASON_REWARDS.map(item => (
+              <MilestoneRow
+                key={item.id}
+                name={item.name + (item.relic ? ' · 遗物' : '')}
+                need={item.need}
+                current={s.expeditionScore}
+                claimed={s.expeditionSeasonRewards.includes(item.id)}
+                onClaim={() => { const result = claimSeason(item.id); setHint(result.ok ? `已领取「${item.name}」` : result.reason ?? '') }}
+              />
+            ))}
 
-        <div className="section-title">远征商店 · {s.expeditionCurrency} 远征币</div>
-        <div className="expedition-shop">
-          {EXPEDITION_SHOP.map(item => {
-            const bought = s.expeditionShopPurchases[item.id] ?? 0
-            const capped = bought >= item.maxPurchases
-            return (
-              <div className="expedition-shop-row" key={item.id}>
-                <div>
-                  <b>{item.name}</b>
-                  <small>{item.desc}</small>
-                  <em>{item.cost} 远征币 · {bought}/{item.maxPurchases}</em>
-                </div>
-                <button className="btn-sub" disabled={capped} onClick={() => { const result = buyShop(item.id); setHint(result.ok ? `已兑换「${item.name}」` : result.reason ?? '') }}>
-                  {capped ? '已满' : '兑换'}
-                </button>
-              </div>
-            )
-          })}
-        </div>
+            <div className="section-title">远征商店 · {s.expeditionCurrency} 远征币</div>
+            <div className="expedition-shop">
+              {EXPEDITION_SHOP.map(item => {
+                const bought = s.expeditionShopPurchases[item.id] ?? 0
+                const capped = bought >= item.maxPurchases
+                return (
+                  <div className="expedition-shop-row" key={item.id}>
+                    <div>
+                      <b>{item.name}</b>
+                      <small>{item.desc}</small>
+                      <em>{item.cost} 远征币 · {bought}/{item.maxPurchases}</em>
+                    </div>
+                    <button className="btn-sub" disabled={capped} onClick={() => { const result = buyShop(item.id); setHint(result.ok ? `已兑换「${item.name}」` : result.reason ?? '') }}>
+                      {capped ? '已满' : '兑换'}
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
 
-        <div className="expedition-relics">
-          <span>遗物</span>
-          <b>星图 {s.expeditionRelics.starMap}/3</b>
-          <b>战旗 {s.expeditionRelics.ironBanner}/3</b>
-          <b>香炉 {s.expeditionRelics.spiritCenser}/3</b>
-        </div>
-      </div>
+            <div className="expedition-relics">
+              <span>遗物</span>
+              <b>星图 {s.expeditionRelics.starMap}/3</b>
+              <b>战旗 {s.expeditionRelics.ironBanner}/3</b>
+              <b>香炉 {s.expeditionRelics.spiritCenser}/3</b>
+            </div>
+          </div>
+        </Sheet>
+      )}
     </div>
   )
 }

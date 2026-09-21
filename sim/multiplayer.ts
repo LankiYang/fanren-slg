@@ -157,6 +157,12 @@ try {
 
   const aView = await json<WarfrontSnapshot>('/api/warfront', {}, a.token)
   assert(aView.reports.some(x => x.attackerId === b.snapshot.player.id && x.defenderPlayerId === a.snapshot.player.id), '甲方必须看到被攻击战报')
+  const garrisonLossReport = aView.reports.find(x => x.kind === 'garrisonLoss' && x.nodeKey === 'mist-gate')
+  assert(garrisonLossReport, '据点被反攻后，甲方必须收到驻防阵亡的补充战报，而不是让援军无声消失')
+  assert.equal(garrisonLossReport!.attackerId, b.snapshot.player.id, '阵亡战报必须指明是谁攻破了据点')
+  const aGarrisonBeforeCapture = reinforcedAgain.snapshot.nodes.find(x => x.key === 'mist-gate')!.garrisonByMe
+  const aGarrisonTotalBeforeCapture = aGarrisonBeforeCapture.kuilei + aGarrisonBeforeCapture.yushou + aGarrisonBeforeCapture.fuxiu
+  assert.equal(garrisonLossReport!.losses, aGarrisonTotalBeforeCapture, '阵亡战报里的损失数必须等于甲方当时驻防的援军数（含最初占领时留下的存活部队）')
 
   const sameSectAttack = await fetch(`${base}/api/warfront/attack`, {
     method: 'POST',
