@@ -1,0 +1,217 @@
+import { useEffect, useState } from 'react'
+import { REALMS, RESOURCE_META } from './game/data'
+import type { BuildingKey, ResourceKey } from './game/types'
+import { useGame } from './game/store'
+import { TopBar } from './ui/TopBar'
+import { Scene } from './ui/Scene'
+import { Sheet, Cost } from './ui/Sheet'
+import { BuildingPanel } from './ui/BuildingPanel'
+import { TroopList, CultivatorList } from './ui/ArmyPanel'
+import { StagePanel } from './ui/StagePanel'
+import { WarfrontPanel } from './ui/WarfrontPanel'
+import { SectPanel } from './ui/SectPanel'
+import { ExpeditionPanel } from './ui/ExpeditionPanel'
+import { OfflineSheet } from './ui/OfflineSheet'
+import { QuestPanel } from './ui/QuestPanel'
+import { Tutorial } from './ui/Tutorial'
+import { BreakthroughCeremony } from './ui/BreakthroughCeremony'
+import { currentQuest } from './game/quests'
+import { sprite, fmt } from './ui/util'
+import { CharacterSelect } from './ui/CharacterSelect'
+import { SeekPanel } from './ui/SeekPanel'
+import { cultivationRequirement } from './game/seek'
+
+type Tab = 'home' | 'army' | 'stage' | 'expedition' | 'warfront' | 'cultivator' | 'sect'
+
+export default function App() {
+  const tick = useGame(x => x.tick)
+  const refreshExpedition = useGame(x => x.refreshExpedition)
+  const breakthrough = useGame(x => x.breakthrough)
+  const offlineReport = useGame(x => x.offlineReport)
+  const clearOfflineReport = useGame(x => x.clearOfflineReport)
+  const [now, setNow] = useState(Date.now())
+  const [tab, setTab] = useState<Tab>('home')
+  const [picked, setPicked] = useState<BuildingKey | null>(null)
+  const [showBreak, setShowBreak] = useState(false)
+  const [showQuests, setShowQuests] = useState(false)
+  const [ceremonyRealm, setCeremonyRealm] = useState<string | null>(null)
+  const state = useGame()
+  const quest = currentQuest(state.claimedQuests)
+  const questDone = quest ? quest.done(state) : false
+
+  // 主循环：每 500ms 结算一次产出与升级完成
+  useEffect(() => {
+    tick()
+    refreshExpedition()
+    const id = setInterval(() => { tick(); refreshExpedition(); setNow(Date.now()) }, 500)
+    return () => clearInterval(id)
+  }, [refreshExpedition, tick])
+
+  return (
+    <div className="app">
+      <TopBar onBreakthrough={() => setShowBreak(true)} />
+
+      <div className="scene-wrap">
+        <Scene now={now} onPick={k => setPicked(k)} />
+
+        <SeekPanel />
+
+        {/* 任务追踪器：常驻显示「下一步该做什么」，兼作新手引导 */}
+        {quest && (
+          <button
+            className={'quest-track' + (questDone ? ' ready' : '')}
+            onClick={() => setShowQuests(true)}
+          >
+            <span className="quest-track-label">{questDone ? '✦ 可领取' : '当前目标'}</span>
+            <span className="quest-track-name">{quest.name}</span>
+            <span className="quest-track-desc">{quest.desc}</span>
+          </button>
+        )}
+      </div>
+
+      <div className="tabbar">
+        {([
+          ['home', 'ui/tab-home.webp', '洞府'],
+          ['army', 'ui/tab-army.webp', '演武'],
+          ['stage', 'ui/tab-stage.webp', '秘境'],
+          ['expedition', 'ui/tab-stage.webp', '远征'],
+          ['warfront', 'ui/tab-sect.webp', '战区'],
+          ['cultivator', 'ui/tab-cultivator.webp', '修士'],
+          ['sect', 'ui/tab-sect.webp', '宗门'],
+        ] as [Tab, string, string][]).map(([k, ico, label]) => (
+          <button
+            key={k}
+            className={'tab' + (tab === k ? ' on' : '')}
+            onClick={() => {
+              // 底部导航切换时关闭建筑详情，避免多个 sheet 叠加遮挡目标页面。
+              setPicked(null)
+              setTab(k)
+            }}
+          >
+            <img className="tab-ico" src={sprite(ico)} alt="" />
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {picked && (
+        <BuildingPanel bkey={picked} now={now} onClose={() => setPicked(null)} />
+      )}
+
+      {tab === 'army' && (
+        <Sheet title="演武场" onClose={() => setTab('home')}><TroopList /></Sheet>
+      )}
+      {tab === 'stage' && (
+        <Sheet title="秘境" onClose={() => setTab('home')}><StagePanel /></Sheet>
+      )}
+      {tab === 'expedition' && (
+        <Sheet title="天机远征" sub="每日轮换 · 28 天游历" onClose={() => setTab('home')}><ExpeditionPanel now={now} /></Sheet>
+      )}
+      {tab === 'warfront' && (
+        <Sheet title="赛季战区" onClose={() => setTab('home')}><WarfrontPanel now={now} /></Sheet>
+      )}
+      {tab === 'cultivator' && (
+        <Sheet title="修士" onClose={() => setTab('home')}><CultivatorList /></Sheet>
+      )}
+      {tab === 'sect' && (
+        <Sheet title="宗门" onClose={() => setTab('home')}><SectPanel now={now} /></Sheet>
+      )}
+
+      {showQuests && (
+        <Sheet title="成长任务" onClose={() => setShowQuests(false)}><QuestPanel /></Sheet>
+      )}
+
+      {showBreak && (
+        <BreakthroughSheet
+          onClose={() => setShowBreak(false)}
+          onDo={breakthrough}
+          onSuccess={setCeremonyRealm}
+        />
+      )}
+
+      {/* 突破仪式盖在最顶层，比引导还高——它是一次性的高光时刻，不该被任何东西打断 */}
+      {ceremonyRealm && (
+        <BreakthroughCeremony realmName={ceremonyRealm} onDone={() => setCeremonyRealm(null)} />
+      )}
+
+      {/* 回流弹窗优先级最高，盖在其他面板之上 */}
+      {offlineReport && (
+        <OfflineSheet report={offlineReport} onClose={clearOfflineReport} />
+      )}
+
+      {/* 新手引导盖在最上层（跳过按钮在组件内部，需跟随对话框翻转） */}
+      <Tutorial />
+      <CharacterSelect />
+    </div>
+  )
+}
+
+function BreakthroughSheet({ onClose, onDo, onSuccess }: {
+  onClose: () => void
+  onDo: () => { ok: boolean; reason?: string }
+  onSuccess: (realmName: string) => void
+}) {
+  const s = useGame()
+  const [hint, setHint] = useState('')
+  const cur = REALMS[Math.min(s.realm, REALMS.length - 1)]
+  const next = REALMS[s.realm + 1]
+  const insightNeed = cultivationRequirement(s.realm)
+
+  return (
+    <Sheet title="境界突破" sub={cur.name} onClose={onClose}>
+      {!next ? (
+        <div className="sheet-desc">已抵达当前版本的最高境界。</div>
+      ) : (
+        <>
+          <div className="sheet-desc">
+            突破至 <b style={{ color: 'var(--gold)' }}>{next.name}</b>
+            <br />
+            全局产出 ×{cur.outputBonus.toFixed(2)} → ×{next.outputBonus.toFixed(2)}
+            <br />
+            全军战力 ×{cur.powerBonus.toFixed(2)} → ×{next.powerBonus.toFixed(2)}
+          </div>
+
+          <div className="section-title">
+            前置：洞府 {next.requiresDongfu} 级
+            <span style={{
+              color: s.buildings.dongfu.level >= next.requiresDongfu ? 'var(--ok)' : 'var(--danger)',
+            }}>
+              （当前 {s.buildings.dongfu.level}）
+            </span>
+          </div>
+
+          <div className="section-title">消耗</div>
+          <Cost cost={next.cost} have={s.resources} />
+          <div className="breakthrough-insight">
+            <span>寻道修为</span>
+            <b className={s.seek.cultivation >= insightNeed ? 'ok' : 'lack'}>
+              {fmt(s.seek.cultivation)} / {fmt(insightNeed)}
+            </b>
+          </div>
+
+          <button
+            className="btn-main"
+            onClick={() => {
+              const r = onDo()
+              if (r.ok) { onSuccess(next.name); onClose() }
+              else setHint(r.reason ?? '无法突破')
+            }}
+          >
+            突破
+          </button>
+          <div className="hint">{hint}</div>
+
+          <div className="section-title">当前储备</div>
+          <div className="cost-row">
+            {(Object.keys(RESOURCE_META) as ResourceKey[]).map(k => (
+              <span className="cost" key={k}>
+                <img src={sprite(RESOURCE_META[k].icon)} alt="" />
+                {fmt(s.resources[k])}
+              </span>
+            ))}
+          </div>
+        </>
+      )}
+    </Sheet>
+  )
+}

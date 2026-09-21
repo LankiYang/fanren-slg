@@ -1,0 +1,24 @@
+# Logs
+logs
+*.log
+
+node_modules
+dist
+dist-ssr
+*.local
+*.tsbuildinfo
+server/data/
+
+# 密钥/备份文件，不进仓库
+.env
+*.bak
+
+# PNG 母版共 29MB，只作为 optimize-sprites.cjs 的输入，不进仓库也不参与打包；
+# 打包用的是它转出的 src/assets/sprites/**/*.webp（约 0.7MB，已入库）
+art/masters/
+
+# Editor directories and files
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store

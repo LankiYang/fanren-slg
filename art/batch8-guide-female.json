@@ -1,0 +1,12 @@
+[
+  {
+    "name": "引导NPC·南宫婉(占位)·平常",
+    "out": "guide/lady-normal.png",
+    "prompt": "VERTICAL PORTRAIT ORIENTATION, tall narrow composition. A stunningly beautiful young female cultivator, HALF-BODY from the waist up filling a tall vertical frame, turned slightly to her right as if speaking to someone beside her. Delicate refined features, fair porcelain skin, expressive almond eyes with a calm confident gaze, faint knowing smile. Very long flowing black hair partly pinned up with an ornate jade and gold hairpin, loose strands drifting. Wearing elegant layered xianxia robes in pale ice-blue and white gauze with silver embroidery, wide flowing sleeves, a fitted sash accentuating a graceful slender waist, delicate shoulders with a translucent silk shawl draped over them. Jade bracelet on one wrist, one hand raised gracefully at chest height. Ethereal and alluring, immortal-like elegance. Faint teal spirit mist and drifting petals around her. PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, gacha splash art quality, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, highly detailed."
+  },
+  {
+    "name": "引导NPC·南宫婉(占位)·指引",
+    "out": "guide/lady-point.png",
+    "prompt": "VERTICAL PORTRAIT ORIENTATION, tall narrow composition. The SAME stunningly beautiful young female cultivator — delicate refined features, fair skin, expressive almond eyes, very long flowing black hair with an ornate jade and gold hairpin, pale ice-blue and white layered gauze xianxia robes with silver embroidery, translucent silk shawl, fitted sash, jade bracelet. HALF-BODY from the waist up, now with one slender arm RAISED and INDEX FINGER POINTING forward, lips slightly parted as if explaining, eyebrows raised with a lively engaged expression, hair and sleeves swaying. Consistent character design and colors with the previous portrait. Faint teal spirit mist and drifting petals around her. PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, gacha splash art quality, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, highly detailed."
+  }
+]

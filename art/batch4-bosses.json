@@ -1,0 +1,42 @@
+[
+  {
+    "name": "妖兽·青牛谷·守泉妖蟒",
+    "out": "monster/ch1-serpent.png",
+    "prompt": "A giant green spirit serpent guarding a spring, coiled body with jade-green scales, glowing cyan eyes, fanged maw open in threat, water droplets on its scales, wisps of spirit mist. Full body game boss sprite, single centered creature, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, highly detailed."
+  },
+  {
+    "name": "妖兽·乱星海·海眼巨物",
+    "out": "monster/ch2-leviathan.png",
+    "prompt": "A colossal deep-sea spirit beast, part whale part dragon, dark blue-black hide with bioluminescent cyan patterns, barnacle-crusted plates, long trailing fins, water streaming off it. Full body game boss sprite, single centered creature, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, highly detailed."
+  },
+  {
+    "name": "妖兽·落霞涧·赤焰雕",
+    "out": "monster/ch3-firebird.png",
+    "prompt": "A giant crimson raptor bird with burning feathers, wings spread wide, orange-red flames trailing from wingtips and tail, fierce golden eyes, curved talons wreathed in fire. Full body game boss sprite, single centered creature, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, fiery orange and amber palette, clean readable silhouette, highly detailed."
+  },
+  {
+    "name": "妖兽·太岳山脉·镇山巨猿",
+    "out": "monster/ch4-ape.png",
+    "prompt": "A massive mountain ape spirit beast, thick grey-brown stone-like fur, boulder-sized fists, rocky armored shoulders and back, roaring with fists raised, cracks of amber energy along its arms. Full body game boss sprite, single centered creature, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, earthy brown and amber palette, clean readable silhouette, highly detailed."
+  },
+  {
+    "name": "妖兽·万毒岭·九头毒蟒",
+    "out": "monster/ch5-hydra.png",
+    "prompt": "A multi-headed venomous hydra spirit beast, five visible serpentine heads on long necks, sickly purple-green scales, dripping venom, toxic mist rising around the base, glowing violet eyes. Full body game boss sprite, single centered creature, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, toxic purple-green palette, clean readable silhouette, highly detailed."
+  },
+  {
+    "name": "妖兽·幽冥谷·化形阴尸",
+    "out": "monster/ch6-undead.png",
+    "prompt": "A towering undead corpse cultivator, grey desiccated skin, tattered dark burial robes, long white hair, glowing pale-green eyes, skeletal clawed hands wreathed in ghostly wisps, chains hanging from its arms. Full body game boss sprite, single centered creature, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, cold pale-green and grey palette, clean readable silhouette, highly detailed."
+  },
+  {
+    "name": "妖兽·天南废墟·上古战傀",
+    "out": "monster/ch7-warpuppet.png",
+    "prompt": "An ancient colossal war puppet construct, weathered bronze and dark stone body, massive angular armored frame, glowing amber talisman seals across its chest, one arm ending in a huge blade, faceless helm with a single glowing slit. Full body game boss sprite, single centered creature, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, bronze and amber palette, clean readable silhouette, highly detailed."
+  },
+  {
+    "name": "妖兽·星落原·坠星凶物",
+    "out": "monster/ch8-starbeast.png",
+    "prompt": "A cosmic fallen-star beast, crystalline obsidian body with starfield patterns glowing inside, four legs ending in sharp crystal points, a mane of floating luminous shards, white-blue stellar energy radiating from cracks in its hide. Full body game boss sprite, single centered creature, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, deep indigo and starlight-white palette, clean readable silhouette, highly detailed."
+  }
+]

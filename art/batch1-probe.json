@@ -1,0 +1,22 @@
+[
+  {
+    "name": "主城背景·灵脉山谷",
+    "out": "bg/main-valley.png",
+    "prompt": "A serene mountain valley that serves as a cultivator's home base, viewed from a slightly elevated distance. Misty karst peaks in the background, a winding stream, terraced spirit herb fields, scattered pine and bamboo. Soft warm dawn light, faint blue-green spiritual qi mist drifting between the peaks. NO buildings in the foreground, NO characters, NO people, NO text. Empty ground space in the center-foreground for placing building sprites later. Painterly Chinese xianxia ink-wash-meets-digital-painting game art, wide landscape orientation, atmospheric depth, muted teal and warm amber palette, mobile strategy game main base backdrop, high quality."
+  },
+  {
+    "name": "建筑·洞府",
+    "out": "building/dongfu.png",
+    "prompt": "A cultivator's cave dwelling (dongfu) built into a small rocky outcrop: an arched stone gate carved with glowing cyan formation runes, tiled Chinese-style eaves projecting over the entrance, stone steps leading up, small bamboo grove at the base. Isometric 3/4 top-down game building sprite, single centered building, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  },
+  {
+    "name": "建筑·聚灵阵",
+    "out": "building/juling-formation.png",
+    "prompt": "A spirit-gathering formation altar (juling zhen): a circular raised stone platform inscribed with concentric glowing cyan runic circles, four jade pillars at the cardinal points, a swirling vortex of blue-white spiritual energy rising from the center. Isometric 3/4 top-down game building sprite, single centered building, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  },
+  {
+    "name": "建筑·灵田",
+    "out": "building/lingtian.png",
+    "prompt": "A spirit herb field (lingtian): small terraced plots enclosed by a low bamboo fence, rows of luminescent glowing herbs in jade-green and soft violet, a small wooden tool shed with a thatched roof at one corner, a stone water channel. Isometric 3/4 top-down game building sprite, single centered plot, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  }
+]

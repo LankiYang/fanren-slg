@@ -1,0 +1,38 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: fanren
+      POSTGRES_USER: fanren
+      POSTGRES_PASSWORD: fanren_dev_password
+    ports:
+      - "5432:5432"
+    volumes:
+      - fanren-postgres:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U fanren -d fanren"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      FANREN_STORAGE: postgres
+      FANREN_DATABASE_URL: postgres://fanren:fanren_dev_password@postgres:5432/fanren
+      FANREN_API_HOST: 0.0.0.0
+      FANREN_API_PORT: 5181
+      FANREN_CORS_ORIGIN: http://127.0.0.1:5180
+      FANREN_DB_POOL_SIZE: 10
+    ports:
+      - "5181:5181"
+
+volumes:
+  fanren-postgres:

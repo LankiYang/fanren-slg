@@ -1,0 +1,39 @@
+{
+  "name": "fanren-slg",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "dev": "tsx server/dev.ts",
+    "dev:web": "vite",
+    "server": "tsx server/index.ts",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "sim": "tsx sim/simulate.ts",
+    "audit": "tsx sim/audit.ts",
+    "warfront": "tsx sim/warfront.ts",
+    "stage": "tsx sim/stage.ts",
+    "multiplayer": "tsx sim/multiplayer.ts",
+    "expedition": "tsx sim/expedition.ts",
+    "seek": "tsx sim/seek.ts",
+    "check": "tsc -b && tsx sim/audit.ts && tsx sim/simulate.ts && tsx sim/warfront.ts && tsx sim/multiplayer.ts && tsx sim/expedition.ts && tsx sim/stage.ts && tsx sim/seek.ts"
+  },
+  "dependencies": {
+    "@types/pg": "^8.23.1",
+    "dotenv": "^18.0.1",
+    "pg": "^8.23.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^4.5.5"
+  },
+  "devDependencies": {
+    "@types/node": "^22.20.3",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "sharp": "^0.35.4",
+    "tsx": "^4.23.13",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}

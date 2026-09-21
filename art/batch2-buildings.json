@@ -1,0 +1,37 @@
+[
+  {
+    "name": "建筑·矿脉",
+    "out": "building/kuangmai.png",
+    "prompt": "A spirit ore mine (kuangmai): a rocky hillside opening reinforced with timber beams, glowing amber and cyan crystal veins exposed in the rock face, a small ore cart on wooden rails, scattered raw crystal chunks, a pulley winch. Isometric 3/4 top-down game building sprite, single centered building, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  },
+  {
+    "name": "建筑·坊市",
+    "out": "building/fangshi.png",
+    "prompt": "A cultivators' market pavilion (fangshi): an open-sided Chinese wooden trading hall with upturned tiled eaves, hanging red and amber silk banners, stalls displaying jade and talisman scrolls, a stone counter, strings of spirit stones on display. Isometric 3/4 top-down game building sprite, single centered building, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  },
+  {
+    "name": "建筑·演武场",
+    "out": "building/yanwu.png",
+    "prompt": "A martial training ground (yanwu chang): a raised stone platform with weapon racks holding spears and swords, wooden training dummies, a circular sparring ring marked on the ground, banner poles with fluttering cloth, low surrounding wall. Isometric 3/4 top-down game building sprite, single centered structure, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  },
+  {
+    "name": "建筑·炼丹房",
+    "out": "building/liandan.png",
+    "prompt": "An alchemy chamber (liandan fang): a compact stone and timber hall with a large bronze three-legged alchemy cauldron visible through the open front, amber flames beneath it, wisps of medicinal smoke rising from the chimney, shelves of ceramic pill bottles, bundles of dried herbs hanging from the eaves. Isometric 3/4 top-down game building sprite, single centered building, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  },
+  {
+    "name": "建筑·炼器阁",
+    "out": "building/lianqi.png",
+    "prompt": "An artifact forging pavilion (lianqi ge): a two-story stone and dark timber workshop, a glowing forge with molten metal and cyan spiritual fire visible at the ground floor, an anvil, floating half-forged sword blades suspended in the air by talismans, sparks. Isometric 3/4 top-down game building sprite, single centered building, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  },
+  {
+    "name": "建筑·藏经阁",
+    "out": "building/cangjing.png",
+    "prompt": "A scripture repository tower (cangjing ge): an elegant three-story Chinese pagoda-style library with upturned eaves, latticed windows glowing with warm lamplight, bamboo scroll racks visible inside, a few luminous scrolls floating and circling the top floor, stone steps at the base. Isometric 3/4 top-down game building sprite, single centered building, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  },
+  {
+    "name": "建筑·宗门大殿",
+    "out": "building/zongmen.png",
+    "prompt": "A sect grand hall (zongmen dadian): an imposing wide Chinese palace hall with a sweeping double-tiered tiled roof, broad stone staircase flanked by two stone guardian beast statues, tall red-lacquered columns, a large ceremonial bronze incense burner in front, sect banners. Isometric 3/4 top-down game building sprite, single centered building, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  }
+]

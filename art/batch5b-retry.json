@@ -1,0 +1,17 @@
+[
+  {
+    "name": "法宝·玄龟盾",
+    "out": "item/artifact-shield.png",
+    "prompt": "A dark tortoise-shell shield artifact, hexagonal armored plating, bronze rim with engraved runes, amber protective barrier shimmer around its edge. Game UI item icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "法宝·缚灵索",
+    "out": "item/artifact-rope.png",
+    "prompt": "A coiled spirit-binding rope artifact, braided golden cord with talisman slips tied along it, glowing amber knots, floating in a loose coil. Game UI item icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "丹药·淬体丹",
+    "out": "item/pill-body.png",
+    "prompt": "A single deep-red spirit pill with golden veins on its surface, radiating warm fiery glow, resting in a small bronze dish. Game UI item icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, crimson and gold palette, chunky readable icon shape, highly detailed."
+  }
+]

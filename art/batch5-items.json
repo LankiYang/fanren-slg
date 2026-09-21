@@ -1,0 +1,47 @@
+[
+  {
+    "name": "洞府·中阶外观",
+    "out": "building/dongfu-t2.png",
+    "prompt": "An upgraded cultivator's cave dwelling built into a rocky outcrop: a larger arched stone gate with brighter cyan formation runes, DOUBLE-TIERED tiled Chinese eaves, carved stone guardian lion at the side, wider stone staircase with railings, a small pavilion added on top of the rock, lush bamboo. Clearly grander than a basic cave entrance. Isometric 3/4 top-down game building sprite, single centered building, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  },
+  {
+    "name": "洞府·高阶外观",
+    "out": "building/dongfu-t3.png",
+    "prompt": "A grand cultivator's mountain estate carved into a large rock formation: an imposing ornate gate blazing with golden and cyan formation runes, THREE-TIERED sweeping tiled roofs, two stone guardian beasts flanking a broad staircase, floating luminous talisman arrays orbiting above the peak, waterfalls on both sides, ancient pines. Majestic and clearly the highest tier. Isometric 3/4 top-down game building sprite, single centered building, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly Chinese xianxia cultivation architecture, warm dramatic lighting from upper left, teal and gold accent palette, clean readable silhouette, mobile strategy game building asset, highly detailed."
+  },
+  {
+    "name": "法宝·青锋剑",
+    "out": "item/artifact-sword.png",
+    "prompt": "A slender jade-green flying sword artifact, glowing cyan energy along the blade edge, ornate hilt with a green gem, faint sword-qi wisps trailing. Game UI item icon, single centered object floating at a slight angle, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "法宝·玄龟盾",
+    "out": "item/artifact-shield.png",
+    "prompt": "A dark tortoise-shell shield artifact, hexagonal armored plating, bronze rim with engraved runes, amber protective barrier shimmer around its edge. Game UI item icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "法宝·缚灵索",
+    "out": "item/artifact-rope.png",
+    "prompt": "A coiled spirit-binding rope artifact, braided golden cord with talisman slips tied along it, glowing amber knots, floating in a loose coil. Game UI item icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "丹药·聚气丹",
+    "out": "item/pill-qi.png",
+    "prompt": "A single glowing cyan-white spirit pill in a small open ceramic dish, the pill radiating soft qi mist, swirl pattern on its surface. Game UI item icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal accent palette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "丹药·淬体丹",
+    "out": "item/pill-body.png",
+    "prompt": "A single deep-red spirit pill with golden veins on its surface, radiating warm fiery glow, resting in a small bronze dish. Game UI item icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, crimson and gold palette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "丹药·凝神丹",
+    "out": "item/pill-mind.png",
+    "prompt": "A single violet-purple spirit pill with a faint starry shimmer inside, calm ethereal glow, resting in a small jade dish. Game UI item icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, violet and silver palette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "功法·卷轴图标",
+    "out": "item/scroll.png",
+    "prompt": "An ancient bamboo-slip scroll partially unrolled, aged wooden slips bound with cord, glowing cyan cultivation characters visible on the slips, faint spirit light emanating. Game UI item icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text in readable language. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, chunky readable icon shape, highly detailed."
+  }
+]

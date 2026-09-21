@@ -1,0 +1,12 @@
+[
+  {
+    "name": "引导NPC·青木道人·平常",
+    "out": "guide/elder-normal.png",
+    "prompt": "An elderly Chinese cultivator mentor, HALF-BODY portrait from the waist up, turned slightly to his RIGHT (viewer's right) as if speaking to someone beside him. Long white beard and white hair tied in a loose topknot with a simple wooden pin, weathered kind face with shrewd knowing eyes and light smile lines, wearing a faded blue-grey Daoist robe with wide sleeves and a plain cloth sash, a small gourd flask hanging at his hip, one hand stroking his beard. Warm and approachable, a bit crafty — a seasoned rogue cultivator, not a lofty immortal. Faint teal spirit mist drifting around his shoulders. PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, high quality game NPC portrait, highly detailed."
+  },
+  {
+    "name": "引导NPC·青木道人·指引",
+    "out": "guide/elder-point.png",
+    "prompt": "The SAME elderly Chinese cultivator mentor as before — long white beard, white topknot with wooden pin, faded blue-grey Daoist robe with wide sleeves, gourd flask at hip, weathered kind face with shrewd eyes. HALF-BODY portrait from the waist up, now with one arm RAISED and INDEX FINGER POINTING forward-right, mouth slightly open as if explaining something important, eyebrows raised, engaged expression. Consistent character design and colors with the previous portrait. Faint teal spirit mist around his shoulders. PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, high quality game NPC portrait, highly detailed."
+  }
+]

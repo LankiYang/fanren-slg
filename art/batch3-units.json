@@ -1,0 +1,62 @@
+[
+  {
+    "name": "图标·灵石",
+    "out": "icon/lingshi.png",
+    "prompt": "A single glowing spirit stone (lingshi): a faceted translucent crystal shard with soft blue-white inner light, faint cyan energy wisps. Game UI resource icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly semi-realistic game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "图标·灵气",
+    "out": "icon/lingqi.png",
+    "prompt": "A swirling wisp of condensed spiritual energy (lingqi): a glowing cyan-white vortex of flowing qi mist coiled into a spiral orb shape, ethereal and luminous. Game UI resource icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly semi-realistic game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "图标·灵药",
+    "out": "icon/lingyao.png",
+    "prompt": "A bundle of spirit medicine herbs (lingyao): a cluster of luminescent jade-green and violet glowing leaves and a small ginseng-like root, tied with a red cord, faint sparkles. Game UI resource icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly semi-realistic game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "图标·矿灵材",
+    "out": "icon/kuanglingcai.png",
+    "prompt": "A chunk of raw spirit ore (kuanglingcai): a rough dark grey rock with embedded glowing amber-orange crystal veins and a few protruding copper-toned metallic shards. Game UI resource icon, single centered object, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text, no characters. Painterly semi-realistic game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, chunky readable icon shape, highly detailed."
+  },
+  {
+    "name": "兵种·傀儡兵",
+    "out": "troop/kuilei.png",
+    "prompt": "A puppet warrior construct (kuilei bing): a humanoid armored puppet built of dark lacquered wood and bronze plating, joints exposed showing mechanical articulation, glowing amber talisman seals pasted on its chest and forehead, holding a heavy shield and short blade, sturdy defensive stance, faceless smooth mask-like head. Full body game unit sprite, single centered figure, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, highly detailed."
+  },
+  {
+    "name": "兵种·御兽军",
+    "out": "troop/yushou.png",
+    "prompt": "A beast-taming cavalry soldier (yushou jun): a lean cultivator in light leather and cloth armor riding a fierce wolf-like spirit beast with cyan qi flames along its fur, the beast mid-stride in an aggressive charging pose, rider holding a talisman-wrapped spear low. Full body game unit sprite, single centered figure, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, highly detailed."
+  },
+  {
+    "name": "兵种·符修弓阵",
+    "out": "troop/fuxiu.png",
+    "prompt": "A talisman archer cultivator (fuxiu gong): a robed archer in flowing blue-grey cultivator garb drawing a bow formed entirely of glowing cyan spiritual energy, three paper talisman slips orbiting in the air around them, arrow of light nocked, focused precise stance. Full body game unit sprite, single centered figure, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, highly detailed."
+  },
+  {
+    "name": "修士·韩立(占位)",
+    "out": "cultivator/hanli.png",
+    "prompt": "A young male cultivator, bust portrait: plain unadorned dark blue-grey cultivator robes without ornamentation, short black hair tied simply, a cautious guarded expression with calculating narrowed eyes, deliberately understated and low-key presence rather than heroic or flashy, ordinary features, faint dim cyan qi glow at his fingertips only. Character portrait for a game roster card, single centered figure, PLAIN SOLID WHITE BACKGROUND, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, highly detailed."
+  },
+  {
+    "name": "修士·南宫婉(占位)",
+    "out": "cultivator/nangongwan.png",
+    "prompt": "A young female cultivator, bust portrait: elegant flowing pale blue and white hanfu-style cultivator robes with subtle embroidery, long black hair partly pinned with a jade hairpin, calm composed and graceful expression, a glowing cyan talisman slip held between two fingers. Character portrait for a game roster card, single centered figure, PLAIN SOLID WHITE BACKGROUND, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, highly detailed."
+  },
+  {
+    "name": "修士·丹修青元",
+    "out": "cultivator/danxiu.png",
+    "prompt": "An alchemist cultivator, bust portrait: a middle-aged man with a short beard in warm amber and brown robes with wide sleeves, a small bronze alchemy gourd hanging at his belt, holding a glowing golden pill between thumb and forefinger, kindly shrewd expression, faint medicinal smoke wisps. Character portrait for a game roster card, single centered figure, PLAIN SOLID WHITE BACKGROUND, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, highly detailed."
+  },
+  {
+    "name": "修士·阵修墨岩",
+    "out": "cultivator/zhenxiu.png",
+    "prompt": "A formation-master cultivator, bust portrait: a stern broad-shouldered man in heavy dark slate-grey robes with geometric rune patterns along the collar and sleeves, holding a small floating array flag, glowing cyan formation diagram hovering faintly in front of his palm, severe focused expression. Character portrait for a game roster card, single centered figure, PLAIN SOLID WHITE BACKGROUND, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, highly detailed."
+  },
+  {
+    "name": "妖兽·结丹妖兽",
+    "out": "monster/jiedan-beast.png",
+    "prompt": "A powerful core-formation stage spirit beast boss: a massive armored tiger-like demonic beast with dark scaled hide, glowing cyan qi veins running along its flanks, oversized curved fangs and claws crackling with energy, two curling horns, crouched in a menacing pre-pounce stance. Full body game boss sprite, single centered creature, PLAIN SOLID WHITE BACKGROUND, no ground shadow, no text. Painterly semi-realistic Chinese xianxia game art, warm dramatic lighting from upper left, teal and amber accent palette, clean readable silhouette, highly detailed."
+  }
+]
