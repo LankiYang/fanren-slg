@@ -54,6 +54,7 @@ export function createInitialState(): ServerState {
 
 export class JsonRepository implements StateRepository {
   private state: ServerState | null = null
+  private mutationQueue = Promise.resolve()
   private writeQueue = Promise.resolve()
 
   constructor(private readonly filePath = process.env.FANREN_DATA_FILE || DEFAULT_PATH) {}
@@ -74,10 +75,14 @@ export class JsonRepository implements StateRepository {
   }
 
   async mutate<T>(fn: (state: ServerState) => T | Promise<T>): Promise<T> {
-    const state = await this.load()
-    const result = await fn(state)
-    await this.save()
-    return result
+    const operation = this.mutationQueue.then(async () => {
+      const state = await this.load()
+      const result = await fn(state)
+      await this.save()
+      return result
+    })
+    this.mutationQueue = operation.then(() => undefined, () => undefined)
+    return operation
   }
 
   async health(): Promise<RepositoryHealth> {

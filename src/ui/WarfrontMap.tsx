@@ -98,8 +98,8 @@ export function WarfrontMap({ snapshot, selectedKey, now, onSelect, command }: W
             </div>
           )}
         </div>
-        {command}
       </div>
+      {command && <div className="warfront-command-slot">{command}</div>}
       <div className="warfront-map-footer">
         <span><i className="legend-dot mine" />我方宗门</span>
         <span><i className="legend-dot rival" />敌对宗门</span>

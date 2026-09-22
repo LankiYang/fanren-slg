@@ -86,7 +86,7 @@ export function WarfrontPanel({ now }: { now: number }) {
 
   const selectNode = (key: string) => {
     setSelectedKey(key)
-    setCommandCollapsed(false)
+    setCommandCollapsed(true)
     const next = snapshot?.nodes.find(node => node.key === key)
     if (snapshot && next) setFormation(optimalOnlineFormation(snapshot.player.troops, next.guardTroop))
   }
@@ -115,7 +115,7 @@ export function WarfrontPanel({ now }: { now: number }) {
             <button className="btn-sub" type="submit" disabled={nameDraft.trim().length < 2}>确认</button>
           </form>}
         </div>
-        <div className="online-identity-actions"><button className="btn-sub" data-tut="warfront-details" onClick={() => setShowDetails(true)}>详情</button><button className="btn-sub" data-tut="warfront-friends" onClick={() => setShowFriends(value => !value)}>好友{snapshot.friendRequests.filter(request => request.direction === 'incoming').length > 0 && <i>{snapshot.friendRequests.filter(request => request.direction === 'incoming').length}</i>}</button><button className="identity-reset" type="button" onClick={() => void online.newIdentity()} title="创建新的游客身份">新身份</button></div>
+        <div className="online-identity-actions"><button className="btn-sub" data-tut="warfront-details" onClick={() => setShowDetails(true)}>排行榜</button><button className="btn-sub" data-tut="warfront-friends" onClick={() => setShowFriends(value => !value)}>好友{snapshot.friendRequests.filter(request => request.direction === 'incoming').length > 0 && <i>{snapshot.friendRequests.filter(request => request.direction === 'incoming').length}</i>}</button><button className="identity-reset" type="button" onClick={() => void online.newIdentity()} title="创建新的游客身份">新身份</button></div>
       </div>
 
       <div className="warfront-heading">
@@ -147,30 +147,39 @@ export function WarfrontPanel({ now }: { now: number }) {
               <button className="warfront-command-toggle" type="button" aria-expanded={!commandCollapsed} onClick={() => setCommandCollapsed(value => !value)}>{commandCollapsed ? '展开指挥' : '收起'}</button>
             </div>
           </div>
-          <div className="warfront-command-summary">
-            <div className="warfront-command-stat"><span>出战</span><b>{deployed}</b><small>/ {MARCH_CAP} 人</small></div>
-            <div className="warfront-command-stat"><span>预计战力</span><b style={{ color: myPower >= selectedState!.guardPower ? 'var(--ok)' : 'var(--danger)' }}>{fmt(myPower)}</b><small>守军 {fmt(selectedState!.guardPower)}</small></div>
-            <button className="btn-main warfront-march-button" disabled={marchDisabled} onClick={async () => {
-              setWorking(true)
-              try {
-                const marched = await online.march(selectedKey, tactic, formation)
-                if (marched) markGuideFlag('warfront-march')
-              } finally { setWorking(false) }
-            }}>
-              {working ? '派出中…' : ownArmy ? '行军中…' : friendly ? '同宗驻守' : '派出行军'}
-            </button>
-          </div>
-          {!commandCollapsed && <>
-            <div className="cost-row warfront-yield">{(Object.keys(selected.income) as ResourceKey[]).map(key => <span className="cost" key={key}><img src={sprite(RESOURCE_META[key].icon)} alt="" />+{selected.income[key]!.toFixed(2)}/s</span>)}</div>
-            <div className="warfront-tactics" role="group" aria-label="行军策略">
-              {(Object.keys(WARFRONT_TACTICS) as WarfrontTactic[]).map(key => <button key={key} className={`warfront-tactic${tactic === key ? ' selected' : ''}`} onClick={() => setTactic(key)}><span>{WARFRONT_TACTICS[key].name}</span><small>{WARFRONT_TACTICS[key].desc}</small></button>)}
+          {friendly ? (
+            <div className="warfront-command-summary warfront-command-garrison-summary">
+              <div className="warfront-command-stat"><span>据点守军</span><b>{selectedState!.garrisonTotal}</b><small>/ 360 人</small></div>
+              <div className="warfront-command-stat"><span>我的援军</span><b>{sum(selectedState!.garrisonByMe)}</b><small>已驻防</small></div>
+              <div className="warfront-command-garrison-callout">分配援军，提升守军强度，守住据点持续收益。</div>
             </div>
-            <div className="progress"><i style={{ width: `${Math.min(100, myPower / Math.max(1, selectedState!.guardPower) * 100)}%`, background: myPower >= selectedState!.guardPower ? 'var(--ok)' : 'var(--danger)' }} /></div>
-            {friendly && <div className="blocker">同宗据点不可攻击，可在下方派遣援军。</div>}
-            {ownArmy && <div className="blocker">已有部队行军至 {WARFRONT_NODE_MAP[ownArmy.destinationKey ?? '']?.name ?? '目标据点'}，所有玩家都能看到军队移动。</div>}
-            {cooldown > 0 && !ownArmy && <div className="blocker">服务端整备冷却 · {fmtTime(cooldown)} 后可再次下令。</div>}
+          ) : (
+            <div className="warfront-command-summary">
+              <div className="warfront-command-stat"><span>出战</span><b>{deployed}</b><small>/ {MARCH_CAP} 人</small></div>
+              <div className="warfront-command-stat"><span>预计战力</span><b style={{ color: myPower >= selectedState!.guardPower ? 'var(--ok)' : 'var(--danger)' }}>{fmt(myPower)}</b><small>守军 {fmt(selectedState!.guardPower)}</small></div>
+              <button className="btn-main warfront-march-button" disabled={marchDisabled} onClick={async () => {
+                setWorking(true)
+                try {
+                  const marched = await online.march(selectedKey, tactic, formation)
+                  if (marched) markGuideFlag('warfront-march')
+                } finally { setWorking(false) }
+              }}>
+                {working ? '派出中…' : ownArmy ? '行军中…' : '派出行军'}
+              </button>
+            </div>
+          )}
+          {!commandCollapsed && <>
+            {friendly ? <GarrisonPanel node={selectedState!} troops={snapshot.player.troops} draft={garrisonDraft} onDraftChange={setGarrisonDraft} /> : <>
+              <div className="cost-row warfront-yield">{(Object.keys(selected.income) as ResourceKey[]).map(key => <span className="cost" key={key}><img src={sprite(RESOURCE_META[key].icon)} alt="" />+{selected.income[key]!.toFixed(2)}/s</span>)}</div>
+              <div className="warfront-tactics" role="group" aria-label="行军策略">
+                {(Object.keys(WARFRONT_TACTICS) as WarfrontTactic[]).map(key => <button key={key} className={`warfront-tactic${tactic === key ? ' selected' : ''}`} onClick={() => setTactic(key)}><span>{WARFRONT_TACTICS[key].name}</span><small>{WARFRONT_TACTICS[key].desc}</small></button>)}
+              </div>
+              <div className="progress"><i style={{ width: `${Math.min(100, myPower / Math.max(1, selectedState!.guardPower) * 100)}%`, background: myPower >= selectedState!.guardPower ? 'var(--ok)' : 'var(--danger)' }} /></div>
+              {ownArmy && <div className="blocker">已有部队行军至 {WARFRONT_NODE_MAP[ownArmy.destinationKey ?? '']?.name ?? '目标据点'}，所有玩家都能看到军队移动。</div>}
+              {cooldown > 0 && !ownArmy && <div className="blocker">服务端整备冷却 · {fmtTime(cooldown)} 后可再次下令。</div>}
+              <OnlineFormation enemyTroop={selectedState!.guardTroop} troops={snapshot.player.troops} formation={formation} onChange={setFormation} />
+            </>}
             {online.error && <div className="blocker danger">{online.error}</div>}
-            <OnlineFormation enemyTroop={selectedState!.guardTroop} troops={snapshot.player.troops} formation={formation} onChange={setFormation} />
           </>}
         </div>
       } />
@@ -189,8 +198,7 @@ export function WarfrontPanel({ now }: { now: number }) {
       )}
 
       {showDetails && (
-        <Sheet title="战区详情" sub="驻防 · 排行 · 宗门 · 战报" onClose={() => setShowDetails(false)}>
-          <GarrisonPanel node={selectedState!} troops={snapshot.player.troops} draft={garrisonDraft} onDraftChange={setGarrisonDraft} />
+        <Sheet title="战区排行榜" sub="征募 · 宗门榜 · 个人榜 · 战报" onClose={() => setShowDetails(false)}>
           <div className="season-recruit"><span>兵损由服务端记录，征募用于补充赛季军团。</span><button className="btn-sub" disabled={now < snapshot.player.recruitReadyAt} onClick={() => void online.recruit()}>{now < snapshot.player.recruitReadyAt ? `${fmtTime(snapshot.player.recruitReadyAt - now)} 后征募` : '征募援军 +72'}</button></div>
           <Leaderboard title="宗门榜" rows={snapshot.sectLeaderboard} />
           <Leaderboard title="个人榜" rows={snapshot.playerLeaderboard} />

@@ -184,7 +184,7 @@ export const QUESTS: Quest[] = [
   {
     id: 'warfront-garrison', chapter: 'warfront', name: '守住据点', desc: '向战区据点派遣一次援军',
     why: '占领不是终点，驻防援军才会提高守军并保护持续收益；兵损也会真实同步。',
-    how: '战区点“详情”，在宗门驻防中滑动分配兵力，确认派遣援军。', route: { kind: 'warfront' },
+    how: '占领我方据点后，展开地图指挥栏，在驻防援军中滑动分配兵力并确认派遣。', route: { kind: 'warfront' },
     done: s => s.guideFlags.includes('warfront-garrison'),
     rewardRatio: 0.74,
   },

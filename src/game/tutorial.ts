@@ -202,7 +202,7 @@ export const FEATURE_INTRO: Record<FeatureId, TutorialStep[]> = {
     },
     {
       id: 'warfront-3', target: null, pose: 'point', advance: 'next',
-      text: '占领后别急着离开：在详情里派援军驻防，再打开好友面板添加在线修士。占点、守点、协同，才是完整的战区循环。',
+      text: '占领后别急着离开：展开指挥栏直接派援军驻防，再打开好友面板添加在线修士。占点、守点、协同，才是完整的战区循环。',
     },
   ],
   sect: [
@@ -426,12 +426,12 @@ export const GUIDE_TOURS: Record<string, TutorialStep[]> = {
   ],
   'warfront-garrison': [
     {
-      id: 'warfront-garrison-details', target: '[data-tut="warfront-details"]', pose: 'point', advance: 'click', pad: 4,
-      text: '打开战区详情。占领据点不是终点，驻防援军才会把你的兵力变成真实守军，保护后续的持续收益。',
+      id: 'warfront-garrison-command', target: '.warfront-command-toggle', pose: 'point', advance: 'click', pad: 4,
+      text: '先选中绿色的我方据点，再展开地图指挥栏。占领不是终点，驻防援军才会把兵力变成真实守军，保护持续收益。',
     },
     {
       id: 'warfront-garrison-after', target: '[data-tut="garrison-panel"]', pose: 'point', advance: 'next', pad: 4,
-      text: '在宗门驻防里分配兵力后派遣援军。若当前据点还不是我方，先完成一次占点，再回来做这一步。',
+      text: '这里就是驻防援军操作区：滑动分配兵力，点击“派遣援军”后，其他玩家看到的真实守军会立即增加。',
     },
   ],
   friend: [

@@ -86,7 +86,7 @@ export function ensureBots(state: ServerState): void {
     if (state.players[id]) continue
     state.players[id] = {
       id,
-      token: `bot-token-${id}`,
+      token: randomBytes(24).toString('base64url'),
       name: BOT_NAMES[i],
       sectId: AI_SECT_ID,
       score: 0,
@@ -123,7 +123,7 @@ export function reassignHumansOutOfAiSect(state: ServerState): void {
 export function authenticate(state: ServerState, token: string | undefined): ServerPlayer {
   if (!token) throw new DomainError('请先进入联机战区', 401, 'UNAUTHORIZED')
   const player = Object.values(state.players).find(x => x.token === token)
-  if (!player) throw new DomainError('联机凭证已失效，请重新登录', 401, 'UNAUTHORIZED')
+  if (!player || player.isBot) throw new DomainError('联机凭证已失效，请重新登录', 401, 'UNAUTHORIZED')
   player.lastSeenAt = Date.now()
   advanceWorld(state, Date.now())
   restoreWarEnergy(player)
@@ -513,7 +513,9 @@ export function attack(state: ServerState, player: ServerPlayer, payload: Attack
     failMin: 0.16,
     failMax: 0.45,
   })
-  applyLosses(player.troops, formation, losses)
+  for (const key of TROOP_KEYS) player.troops[key] -= formation[key]
+  const survivors = { ...formation }
+  applyLosses(survivors, formation, losses)
   player.warEnergy -= 1
 
   const scoreGained = win ? 20 + Math.round(enemyPower / 80) : 4
@@ -521,7 +523,8 @@ export function attack(state: ServerState, player: ServerPlayer, payload: Attack
   player.cooldownUntil = now + ATTACK_COOLDOWN_MS
   state.sects[player.sectId].score += scoreGained
   const captured = win && node.ownerPlayerId !== player.id
-  if (win) occupyNode(state, node, player, survivorsOf(formation, player.troops), myPower, payload.tactic)
+  if (win) occupyNode(state, node, player, survivors, myPower, payload.tactic)
+  else addFormation(player.troops, survivors)
 
   const report: OnlineBattleReport = {
     id: `r-${randomUUID()}`,
@@ -615,6 +618,7 @@ export function createSect(state: ServerState, player: ServerPlayer, rawName: st
 
 export function joinSect(state: ServerState, player: ServerPlayer, sectId: string): void {
   if (!state.sects[sectId]) throw new DomainError('宗门不存在', 404)
+  if (sectId === AI_SECT_ID) throw new DomainError('该宗门为秘境守军阵营，不能加入', 403, 'AI_SECT_FORBIDDEN')
   transferPlayerNodes(state, player, sectId)
   player.sectId = sectId
 }
@@ -774,13 +778,6 @@ function normalizeBattleProfile(raw: BattleProfile): BattleProfile {
 function integerField(value: unknown, min: number, max: number, label: string): number {
   if (!Number.isInteger(value) || Number(value) < min || Number(value) > max) throw new DomainError(`${label}档案无效`, 400, 'PROFILE_FIELD')
   return Number(value)
-}
-
-function survivorsOf(formation: Record<TroopKey, number>, troopsAfter: Record<TroopKey, number>): Record<TroopKey, number> {
-  return TROOP_KEYS.reduce((out, key) => {
-    out[key] = Math.min(formation[key], troopsAfter[key])
-    return out
-  }, emptyFormation())
 }
 
 function emptyFormation(): Record<TroopKey, number> {

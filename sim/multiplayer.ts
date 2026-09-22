@@ -29,6 +29,8 @@ try {
   const b = await json<GuestAuthResponse>('/api/auth/guest', { method: 'POST', body: JSON.stringify({ displayName: '乙方道友' }) })
   assert.notEqual(a.snapshot.player.id, b.snapshot.player.id, '两个会话必须得到不同玩家')
   assert.notEqual(a.snapshot.player.sectId, b.snapshot.player.sectId, '前两个测试玩家应分属不同宗门')
+  const botAccess = await fetch(`${base}/api/warfront`, { headers: { authorization: 'Bearer bot-token-bot-sect-cangwu-0' } })
+  assert.equal(botAccess.status, 401, '机器人凭证即使格式已知也不能用于玩家接口')
 
   const strongerProfile = {
     ...a.snapshot.battleProfile,
@@ -90,10 +92,11 @@ try {
     requestId: 'test-a-capture', nodeKey: 'mist-gate', tactic: 'raid',
     formation: { kuilei: 100, yushou: 0, fuxiu: 0 },
   }
-  const first = await json<{ snapshot: WarfrontSnapshot; report: { id: string; win: boolean; myPower: number } }>('/api/warfront/attack', { method: 'POST', body: JSON.stringify(attackA) }, a.token)
+  const first = await json<{ snapshot: WarfrontSnapshot; report: { id: string; win: boolean; myPower: number; losses: number } }>('/api/warfront/attack', { method: 'POST', body: JSON.stringify(attackA) }, a.token)
   assert.equal(first.report.win, true, '甲方应攻下迷雾关')
   assert(first.report.myPower > 1500, '战报战力必须使用同步后的境界/修士/功法/法宝加成')
   assert.equal(first.report.myPower, Math.round(battlePowerFromBattleProfile(strongerProfile, attackA.formation, 'yushou')), '前端共享公式与服务端战报必须一致')
+  assert.equal(first.snapshot.player.troops.kuilei, 20, '立即结算胜利后，留在据点的存活部队不能继续留在个人兵力里')
   assert(first.snapshot.warfrontIncome.lingshi > 0, '占领据点后快照必须返回持续资源收益')
   const troopsAfterFirst = first.snapshot.player.troops.kuilei
   const scoreAfterFirst = first.snapshot.player.score
