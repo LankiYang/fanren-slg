@@ -87,6 +87,7 @@ export function GongfaPanel({ now }: { now: number }) {
             <div className="card-side">
               <button
                 className="btn-sub"
+                data-tut={g.key === 'g_output' ? 'gongfa-research' : undefined}
                 disabled={maxed || locked || !!busy}
                 onClick={() => {
                   const r = research(g.key)
@@ -253,6 +254,7 @@ export function ArtifactPanel() {
             <div className="card-side">
               <button
                 className="btn-sub"
+                data-tut={a.key === 'sword' ? 'artifact-forge' : undefined}
                 disabled={maxed || locked}
                 onClick={() => {
                   const r = forge(a.key)

@@ -53,6 +53,7 @@ export function SectPanel({ now }: { now: number }) {
 
       <button
         className="btn-main"
+        data-tut="boss-challenge"
         disabled={!built || onCooldown}
         onClick={() => {
           const r = challengeBoss()

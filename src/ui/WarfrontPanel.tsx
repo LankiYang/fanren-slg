@@ -20,6 +20,7 @@ export function WarfrontPanel({ now }: { now: number }) {
   const game = useGame()
   const syncIncome = useGame(x => x.syncOnlineWarfrontIncome)
   const claimReward = useGame(x => x.claimOnlineWarfrontReward)
+  const markGuideFlag = useGame(x => x.markGuideFlag)
   const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [selectedKey, setSelectedKey] = useState(WARFRONT_NODES[0].key)
   const [tactic, setTactic] = useState<WarfrontTactic>('raid')
@@ -29,7 +30,7 @@ export function WarfrontPanel({ now }: { now: number }) {
   const [garrisonDraft, setGarrisonDraft] = useState<Record<TroopKey, number>>(EMPTY_FORMATION)
   const [showFriends, setShowFriends] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
-  const [commandCollapsed, setCommandCollapsed] = useState(false)
+  const [commandCollapsed, setCommandCollapsed] = useState(true)
   const [showRename, setShowRename] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
   const localBattleProfile = useMemo(() => battleProfileFromGameState(game, now), [game, now])
@@ -114,7 +115,7 @@ export function WarfrontPanel({ now }: { now: number }) {
             <button className="btn-sub" type="submit" disabled={nameDraft.trim().length < 2}>确认</button>
           </form>}
         </div>
-        <div className="online-identity-actions"><button className="btn-sub" onClick={() => setShowDetails(true)}>详情</button><button className="btn-sub" onClick={() => setShowFriends(value => !value)}>好友{snapshot.friendRequests.filter(request => request.direction === 'incoming').length > 0 && <i>{snapshot.friendRequests.filter(request => request.direction === 'incoming').length}</i>}</button><button className="identity-reset" type="button" onClick={() => void online.newIdentity()} title="创建新的游客身份">新身份</button></div>
+        <div className="online-identity-actions"><button className="btn-sub" data-tut="warfront-details" onClick={() => setShowDetails(true)}>详情</button><button className="btn-sub" data-tut="warfront-friends" onClick={() => setShowFriends(value => !value)}>好友{snapshot.friendRequests.filter(request => request.direction === 'incoming').length > 0 && <i>{snapshot.friendRequests.filter(request => request.direction === 'incoming').length}</i>}</button><button className="identity-reset" type="button" onClick={() => void online.newIdentity()} title="创建新的游客身份">新身份</button></div>
       </div>
 
       <div className="warfront-heading">
@@ -146,20 +147,29 @@ export function WarfrontPanel({ now }: { now: number }) {
               <button className="warfront-command-toggle" type="button" aria-expanded={!commandCollapsed} onClick={() => setCommandCollapsed(value => !value)}>{commandCollapsed ? '展开指挥' : '收起'}</button>
             </div>
           </div>
+          <div className="warfront-command-summary">
+            <div className="warfront-command-stat"><span>出战</span><b>{deployed}</b><small>/ {MARCH_CAP} 人</small></div>
+            <div className="warfront-command-stat"><span>预计战力</span><b style={{ color: myPower >= selectedState!.guardPower ? 'var(--ok)' : 'var(--danger)' }}>{fmt(myPower)}</b><small>守军 {fmt(selectedState!.guardPower)}</small></div>
+            <button className="btn-main warfront-march-button" disabled={marchDisabled} onClick={async () => {
+              setWorking(true)
+              try {
+                const marched = await online.march(selectedKey, tactic, formation)
+                if (marched) markGuideFlag('warfront-march')
+              } finally { setWorking(false) }
+            }}>
+              {working ? '派出中…' : ownArmy ? '行军中…' : friendly ? '同宗驻守' : '派出行军'}
+            </button>
+          </div>
           {!commandCollapsed && <>
             <div className="cost-row warfront-yield">{(Object.keys(selected.income) as ResourceKey[]).map(key => <span className="cost" key={key}><img src={sprite(RESOURCE_META[key].icon)} alt="" />+{selected.income[key]!.toFixed(2)}/s</span>)}</div>
             <div className="warfront-tactics" role="group" aria-label="行军策略">
               {(Object.keys(WARFRONT_TACTICS) as WarfrontTactic[]).map(key => <button key={key} className={`warfront-tactic${tactic === key ? ' selected' : ''}`} onClick={() => setTactic(key)}><span>{WARFRONT_TACTICS[key].name}</span><small>{WARFRONT_TACTICS[key].desc}</small></button>)}
             </div>
-            <div className="warfront-power"><span>本次行军 {deployed} 人</span><b style={{ color: myPower >= selectedState!.guardPower ? 'var(--ok)' : 'var(--danger)' }}>{fmt(myPower)}</b><span>预计抵达后结算</span></div>
             <div className="progress"><i style={{ width: `${Math.min(100, myPower / Math.max(1, selectedState!.guardPower) * 100)}%`, background: myPower >= selectedState!.guardPower ? 'var(--ok)' : 'var(--danger)' }} /></div>
             {friendly && <div className="blocker">同宗据点不可攻击，可在下方派遣援军。</div>}
             {ownArmy && <div className="blocker">已有部队行军至 {WARFRONT_NODE_MAP[ownArmy.destinationKey ?? '']?.name ?? '目标据点'}，所有玩家都能看到军队移动。</div>}
             {cooldown > 0 && !ownArmy && <div className="blocker">服务端整备冷却 · {fmtTime(cooldown)} 后可再次下令。</div>}
             {online.error && <div className="blocker danger">{online.error}</div>}
-            <button className="btn-main" disabled={marchDisabled} onClick={async () => { setWorking(true); await online.march(selectedKey, tactic, formation); setWorking(false) }}>
-              {working ? '正在派出行军…' : ownArmy ? '行军中…' : friendly ? '同宗驻守中' : '派出行军'}
-            </button>
             <OnlineFormation enemyTroop={selectedState!.guardTroop} troops={snapshot.player.troops} formation={formation} onChange={setFormation} />
           </>}
         </div>
@@ -202,14 +212,15 @@ function OnlineFormation({ enemyTroop, troops, formation, onChange }: { enemyTro
 }
 
 function GarrisonPanel({ node, troops, draft, onDraftChange }: { node: OnlineNodeState; troops: Record<TroopKey, number>; draft: Record<TroopKey, number>; onDraftChange: (next: Record<TroopKey, number>) => void }) {
+  const markGuideFlag = useGame(x => x.markGuideFlag)
   const garrison = useOnline(x => x.garrison); const withdraw = useOnline(x => x.withdraw); const error = useOnline(x => x.error); const [working, setWorking] = useState(false)
-  if (!node.ownerSectId) return <div className="garrison-hint">夺下据点后可派遣宗门援军，驻军会成为其他玩家看到的真实守军。</div>
+  if (!node.ownerSectId) return <div className="garrison-hint" data-tut="garrison-panel">夺下据点后可派遣宗门援军，驻军会成为其他玩家看到的真实守军。</div>
   const used = sum(draft); const room = Math.max(0, 360 - node.garrisonTotal); const mine = node.garrisonByMe; const mineTotal = sum(mine)
   // 每格能加多少 = 总余量 - 其它兵种已占用的余量；曾经多算了当前兵种自己的旧值，
   // 导致滑块能拖到超出 360 上限，提交时被服务端拒绝却看不出哪里错了。
   const roomFor = (key: TroopKey) => Math.max(0, room - (used - draft[key]))
   const apply = (key: TroopKey, value: number) => { const max = Math.min(troops[key], roomFor(key)); onDraftChange({ ...draft, [key]: Math.max(0, Math.min(value, max)) }) }
-  return <div className="garrison-panel"><div className="garrison-head"><div><b>宗门驻防</b><small>据点守军 {node.garrisonTotal}/360 · 防守战力 {fmt(node.garrisonPower)}</small></div><span>我的援军 {mineTotal}</span></div>{TROOPS.map(t => <div className="garrison-row" key={t.key}><span>{t.name}</span><b>{draft[t.key]}</b><input className="slider" type="range" min={0} max={Math.max(1, Math.min(troops[t.key], roomFor(t.key)))} value={draft[t.key]} onChange={event => apply(t.key, Number(event.target.value))} /><span className="garrison-stepper"><button className="garrison-step" type="button" disabled={draft[t.key] <= 0} onClick={() => apply(t.key, draft[t.key] - 12)}>-</button><button className="garrison-step" type="button" disabled={roomFor(t.key) <= 0} onClick={() => apply(t.key, draft[t.key] + 12)}>+</button></span></div>)}<div className="garrison-actions"><button className="btn-sub" disabled={working || used <= 0 || used > room} onClick={async () => { setWorking(true); const ok = await garrison(node.key, draft); setWorking(false); if (ok) onDraftChange({ ...EMPTY_FORMATION }) }}>派遣援军</button><button className="btn-sub" disabled={working || mineTotal <= 0} onClick={async () => { setWorking(true); await withdraw(node.key, mine); setWorking(false) }}>撤回援军</button></div>{error && <div className="sect-error">{error}</div>}</div>
+  return <div className="garrison-panel" data-tut="garrison-panel"><div className="garrison-head"><div><b>宗门驻防</b><small>据点守军 {node.garrisonTotal}/360 · 防守战力 {fmt(node.garrisonPower)}</small></div><span>我的援军 {mineTotal}</span></div>{TROOPS.map(t => <div className="garrison-row" key={t.key}><span>{t.name}</span><b>{draft[t.key]}</b><input className="slider" type="range" min={0} max={Math.max(1, Math.min(troops[t.key], roomFor(t.key)))} value={draft[t.key]} onChange={event => apply(t.key, Number(event.target.value))} /><span className="garrison-stepper"><button className="garrison-step" type="button" disabled={draft[t.key] <= 0} onClick={() => apply(t.key, draft[t.key] - 12)}>-</button><button className="garrison-step" type="button" disabled={roomFor(t.key) <= 0} onClick={() => apply(t.key, draft[t.key] + 12)}>+</button></span></div>)}<div className="garrison-actions"><button className="btn-sub" data-tut="garrison-send" disabled={working || used <= 0 || used > room} onClick={async () => { setWorking(true); const ok = await garrison(node.key, draft); setWorking(false); if (ok) { markGuideFlag('warfront-garrison'); onDraftChange({ ...EMPTY_FORMATION }) } }}>派遣援军</button><button className="btn-sub" disabled={working || mineTotal <= 0} onClick={async () => { setWorking(true); await withdraw(node.key, mine); setWorking(false) }}>撤回援军</button></div>{error && <div className="sect-error">{error}</div>}</div>
 }
 
 function Leaderboard({ title, rows }: { title: string; rows: { id: string; rank: number; name: string; score: number; isMine?: boolean }[] }) { return <><div className="section-title">{title}</div><div className="warfront-rank">{rows.slice(0, 5).map(row => <div className={row.isMine ? 'me' : ''} key={row.id}><span>{row.rank}</span><b>{row.name}{row.isMine ? '（我）' : ''}</b><em>{fmt(row.score)}</em></div>)}</div></> }

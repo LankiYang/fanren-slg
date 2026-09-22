@@ -29,78 +29,82 @@ export function WarfrontMap({ snapshot, selectedKey, now, onSelect, command }: W
         </div>
         <div className="warfront-map-live"><i /> {armies.length} 支行军 · {snapshot.friends.filter(friend => friend.online).length} 位好友在线</div>
       </div>
-      <div className="warfront-map-canvas">
-        <div className="warfront-map-grid" aria-hidden="true" />
-        <svg className="warfront-roads" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-          {WARFRONT_NODES.flatMap(node => node.connections
-            .filter(key => node.key < key)
-            .map(key => {
-              const target = WARFRONT_NODE_MAP[key]
-              return target ? <line key={`${node.key}-${key}`} x1={node.position.x} y1={node.position.y} x2={target.position.x} y2={target.position.y} /> : null
-            }))}
-        </svg>
-        <div className="warfront-map-watermark" aria-hidden="true">苍梧</div>
-        <div className="warfront-map-compass" aria-hidden="true"><b>N</b><span>✦</span></div>
+      <div className="warfront-map-stage">
+        <div className="warfront-map-canvas">
+          <img className="warfront-map-terrain" src={sprite('bg/warfront-map.webp')} alt="" aria-hidden="true" />
+          <div className="warfront-map-atmosphere" aria-hidden="true" />
+          <div className="warfront-map-grid" aria-hidden="true" />
+          <svg className="warfront-roads" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+            {WARFRONT_NODES.flatMap(node => node.connections
+              .filter(key => node.key < key)
+              .map(key => {
+                const target = WARFRONT_NODE_MAP[key]
+                return target ? <line key={`${node.key}-${key}`} x1={node.position.x} y1={node.position.y} x2={target.position.x} y2={target.position.y} /> : null
+              }))}
+          </svg>
+          <div className="warfront-map-watermark" aria-hidden="true">苍梧</div>
+          <div className="warfront-map-compass" aria-hidden="true"><b>N</b><span>✦</span></div>
 
-        <div className="warfront-player-position" style={pointStyle(mapPosition)} aria-label={`${snapshot.player.name}当前位置`}>
-          <span className="warfront-position-pulse" />
-          <span className="warfront-position-flag">◆</span>
+          <div className="warfront-player-position" style={pointStyle(mapPosition)} aria-label={`${snapshot.player.name}当前位置`}>
+            <span className="warfront-position-pulse" />
+            <span className="warfront-position-flag">◆</span>
+          </div>
+
+          {snapshot.friends.filter(friend => friend.online).map(friend => {
+            const destination = friend.marchDestinationKey ? WARFRONT_NODE_MAP[friend.marchDestinationKey] : null
+            return <div className="warfront-friend-position" key={friend.id} style={pointStyle(friend.mapPosition)} title={`${friend.name} · ${friend.sectName}`} aria-label={`${friend.name}，${friend.online ? '在线' : '离线'}${destination ? `，正在前往${destination.name}` : ''}`}>
+              <span className="warfront-friend-pulse" />
+              <span className="warfront-friend-glyph">◆</span>
+              <span className="warfront-friend-label">{friend.name}</span>
+              {destination && <small>→ {destination.name}</small>}
+            </div>
+          })}
+
+          {WARFRONT_NODES.map(node => {
+            const state = nodeState.get(node.key)
+            if (!state) return null
+            return <MapNode key={node.key} nodeKey={node.key} state={state} mySectId={snapshot.player.sectId} selected={selectedKey === node.key} justCaptured={justCaptured.has(node.key)} onSelect={onSelect} />
+          })}
+
+          {armies.map(army => {
+            const remaining = Math.max(0, (army.arriveAt ?? now) - now)
+            const total = Math.max(1, (army.arriveAt ?? now) - (army.startedAt ?? now))
+            const progress = Math.max(0, Math.min(1, (now - (army.startedAt ?? now)) / total))
+            const armyDestination = WARFRONT_NODE_MAP[army.destinationKey ?? '']
+            return (
+              <div
+                className={`warfront-army ${army.isMine ? 'mine' : 'rival'}`}
+                key={army.id}
+                style={pointStyle(army.position)}
+                title={`${army.name} · ${army.deployed} 人 · ${armyDestination?.name ?? '行军中'}`}
+              >
+                <div className="warfront-army-trail" />
+                <div className="warfront-army-glyph"><span>⚑</span></div>
+                <div className="warfront-army-label">{army.isMine ? '我的军队' : army.name}</div>
+                <div className="warfront-army-meta">{army.deployed} 人 · {Math.ceil(remaining / 1000)}s</div>
+                <div className="warfront-army-progress"><i style={{ width: `${progress * 100}%` }} /></div>
+              </div>
+            )
+          })}
+
+          {ownArmy && destination && (
+            <div className="warfront-march-status">
+              <span className="warfront-status-dot" />
+              <div className="warfront-march-status-body">
+                <b>行军至 {destination.name}</b>
+                <small>抵达后才会在据点交战 · {formatRemaining(ownArmy.arriveAt ?? now, now)}</small>
+                <div className="warfront-march-progress"><i style={{ width: `${marchProgress(ownArmy, now) * 100}%` }} /></div>
+              </div>
+            </div>
+          )}
         </div>
-
-        {snapshot.friends.filter(friend => friend.online).map(friend => {
-          const destination = friend.marchDestinationKey ? WARFRONT_NODE_MAP[friend.marchDestinationKey] : null
-          return <div className="warfront-friend-position" key={friend.id} style={pointStyle(friend.mapPosition)} title={`${friend.name} · ${friend.sectName}`} aria-label={`${friend.name}，${friend.online ? '在线' : '离线'}${destination ? `，正在前往${destination.name}` : ''}`}>
-            <span className="warfront-friend-pulse" />
-            <span className="warfront-friend-glyph">◆</span>
-            <span className="warfront-friend-label">{friend.name}</span>
-            {destination && <small>→ {destination.name}</small>}
-          </div>
-        })}
-
-        {WARFRONT_NODES.map(node => {
-          const state = nodeState.get(node.key)
-          if (!state) return null
-          return <MapNode key={node.key} nodeKey={node.key} state={state} mySectId={snapshot.player.sectId} selected={selectedKey === node.key} justCaptured={justCaptured.has(node.key)} onSelect={onSelect} />
-        })}
-
-        {armies.map(army => {
-          const remaining = Math.max(0, (army.arriveAt ?? now) - now)
-          const total = Math.max(1, (army.arriveAt ?? now) - (army.startedAt ?? now))
-          const progress = Math.max(0, Math.min(1, (now - (army.startedAt ?? now)) / total))
-          const armyDestination = WARFRONT_NODE_MAP[army.destinationKey ?? '']
-          return (
-            <div
-              className={`warfront-army ${army.isMine ? 'mine' : 'rival'}`}
-              key={army.id}
-              style={pointStyle(army.position)}
-              title={`${army.name} · ${army.deployed} 人 · ${armyDestination?.name ?? '行军中'}`}
-            >
-              <div className="warfront-army-trail" />
-              <div className="warfront-army-glyph"><span>⚑</span></div>
-              <div className="warfront-army-label">{army.isMine ? '我的军队' : army.name}</div>
-              <div className="warfront-army-meta">{army.deployed} 人 · {Math.ceil(remaining / 1000)}s</div>
-              <div className="warfront-army-progress"><i style={{ width: `${progress * 100}%` }} /></div>
-            </div>
-          )
-        })}
-
-        {ownArmy && destination && (
-          <div className="warfront-march-status">
-            <span className="warfront-status-dot" />
-            <div className="warfront-march-status-body">
-              <b>行军至 {destination.name}</b>
-              <small>抵达后才会在据点交战 · {formatRemaining(ownArmy.arriveAt ?? now, now)}</small>
-              <div className="warfront-march-progress"><i style={{ width: `${marchProgress(ownArmy, now) * 100}%` }} /></div>
-            </div>
-          </div>
-        )}
+        {command}
       </div>
-      {command}
       <div className="warfront-map-footer">
         <span><i className="legend-dot mine" />我方宗门</span>
         <span><i className="legend-dot rival" />敌对宗门</span>
         <span><i className="legend-dot neutral" />秘境守军</span>
-        <span className="warfront-map-help">点击据点下达行军</span>
+        <span className="warfront-map-help">点击据点选择目标</span>
       </div>
     </section>
   )
@@ -126,7 +130,7 @@ function MapNode({ nodeKey, state, mySectId, selected, justCaptured, onSelect }:
       aria-label={`${def.name}，${state.ownerSectName ?? '秘境守军'}，守军 ${state.garrisonTotal}`}
     >
       <span className="warfront-node-ring"><img src={sprite(TROOP_MAP[state.guardTroop].sprite)} alt={TROOP_MAP[state.guardTroop].name} /></span>
-      <span className="warfront-node-copy"><b>{def.name}</b><small>{state.ownerSectName ?? '秘境守军'}</small></span>
+      <span className="warfront-node-copy"><span className="warfront-node-kind">{def.kind}</span><b>{def.name}</b><small>{state.ownerSectName ?? '秘境守军'}</small></span>
       <span className="warfront-node-guard">守军 {fmt(state.garrisonTotal)}</span>
       {state.ownerSectId && <span className="warfront-node-banner">⚑</span>}
     </button>

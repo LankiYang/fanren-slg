@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { WARFRONT_NODE_MAP } from '../game/warfront'
 import type { OnlinePlayerSearch, WarfrontSnapshot } from '../online/contracts'
 import { useOnline } from '../online/onlineStore'
+import { useGame } from '../game/store'
 import { fmt } from './util'
 
 interface FriendPanelProps {
@@ -13,6 +14,7 @@ export function FriendPanel({ snapshot }: FriendPanelProps) {
   const requestFriend = useOnline(state => state.requestFriend)
   const respondFriend = useOnline(state => state.respondFriend)
   const removeFriend = useOnline(state => state.removeFriend)
+  const markGuideFlag = useGame(state => state.markGuideFlag)
   const error = useOnline(state => state.error)
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<OnlinePlayerSearch[]>([])
@@ -52,11 +54,13 @@ export function FriendPanel({ snapshot }: FriendPanelProps) {
   const handleSearchAction = async (result: OnlinePlayerSearch): Promise<boolean> => {
     if (result.relation === 'incoming' && result.requestId) {
       const accepted = await run(result.id, () => respondFriend(result.requestId!, true))
+      if (accepted) markGuideFlag('friend-added')
       if (query.trim()) setResults(await searchPlayers(query.trim()))
       return accepted
     }
     if (result.relation === 'none') {
       const requested = await run(result.id, () => requestFriend(result.id))
+      if (requested) markGuideFlag('friend-added')
       if (query.trim()) setResults(await searchPlayers(query.trim()))
       await loadOnlinePlayers()
       return requested

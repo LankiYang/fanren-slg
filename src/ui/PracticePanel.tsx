@@ -1,9 +1,10 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { TroopList, CultivatorList } from './ArmyPanel'
 import { StagePanel } from './StagePanel'
 import { ExpeditionPanel } from './ExpeditionPanel'
+import { PracticeOverview, type PracticeSection } from './PracticeGuide'
 
-type PracticeTab = 'army' | 'stage' | 'expedition' | 'cultivator'
+export type PracticeTab = PracticeSection
 
 const TABS: [PracticeTab, string][] = [
   ['army', '演武'],
@@ -13,17 +14,21 @@ const TABS: [PracticeTab, string][] = [
 ]
 
 /** 历练：演武/秘境/远征/修士的合并入口，四个系统心智上都是"备战出征"，收进一个 tab 内部切换，避免底部导航被塞满 */
-export function PracticePanel({ now }: { now: number }) {
-  const [sub, setSub] = useState<PracticeTab>('army')
+export function PracticePanel({ now, initialTab = 'army' }: { now: number; initialTab?: PracticeTab }) {
+  const [sub, setSub] = useState<PracticeTab>(initialTab)
+
+  useEffect(() => { setSub(initialTab) }, [initialTab])
 
   return (
     <div className="practice-panel">
+      <PracticeOverview active={sub} onSelect={setSub} />
       <div className="practice-tabs" role="tablist" aria-label="历练分类">
         {TABS.map(([key, label]) => (
           <button
             key={key}
             role="tab"
             aria-selected={sub === key}
+            data-tut={`practice-${key}`}
             className={'practice-tab' + (sub === key ? ' on' : '')}
             onClick={() => setSub(key)}
           >

@@ -50,6 +50,7 @@ export function TopBar({ onBreakthrough }: { onBreakthrough: () => void }) {
         </div>
         <button
           className={'btn-breakthrough' + (canBreak ? ' pulse' : '')}
+          data-tut="breakthrough-btn"
           disabled={!next}
           onClick={onBreakthrough}
         >

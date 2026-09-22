@@ -1,11 +1,12 @@
 import { useEffect, useState } from 'react'
 import { STAGES, TROOP_MAP, RESOURCE_META } from '../game/data'
-import type { ResourceKey } from '../game/types'
+import type { ResourceKey, TroopKey } from '../game/types'
 import { useGame, battlePower } from '../game/store'
 import { formationUsed, optimalFormation } from '../game/compute'
 import { Formation } from './Formation'
-import { useRevealSequence, ImpactFlash } from './BattleFx'
-import { sprite, fmt, useCountUp } from './util'
+import { PracticeBattleScene } from './PracticeBattleScene'
+import { PracticePurpose } from './PracticeGuide'
+import { sprite, fmt } from './util'
 
 interface Report {
   name: string
@@ -15,6 +16,10 @@ interface Report {
   enemyPower: number
   deployed: number
   losses: number
+  enemyTroop: TroopKey
+  formation: Record<TroopKey, number>
+  firstClear: boolean
+  unlockCultivator?: string
 }
 
 /** 秘境推图（对应无尽冬日的远征章节）*/
@@ -24,6 +29,7 @@ export function StagePanel() {
   const setFormation = useGame(x => x.setFormation)
   const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [report, setReport] = useState<Report | null>(null)
+  const [battleDone, setBattleDone] = useState(false)
   /** 点「挑战」先进编队界面，确认后才真正开打 */
   const [staging, setStaging] = useState<number | null>(null)
 
@@ -66,11 +72,25 @@ export function StagePanel() {
 
         <button
           className="btn-main"
+          data-tut="stage-challenge-confirm"
           disabled={formationUsed(s) <= 0}
           onClick={() => {
             const r = challenge(st.id)
             if (r.ok) {
-              setReport({ name: st.name, sprite: st.sprite, win: r.win, myPower: r.myPower, enemyPower: r.enemyPower, deployed: r.deployed ?? 0, losses: r.losses ?? 0 })
+              setReport({
+                name: st.name,
+                sprite: st.sprite,
+                win: r.win,
+                myPower: r.myPower,
+                enemyPower: r.enemyPower,
+                deployed: r.deployed ?? 0,
+                losses: r.losses ?? 0,
+                enemyTroop: st.enemyTroop,
+                formation: r.formation ?? { ...s.formation },
+                firstClear: !!r.firstClear,
+                unlockCultivator: st.unlockCultivator,
+              })
+              setBattleDone(false)
               setStaging(null)
             }
           }}
@@ -85,11 +105,12 @@ export function StagePanel() {
   }
 
   if (report) {
-    return <StageReport report={report} onClose={() => setReport(null)} />
+    return <StageReport report={report} done={battleDone} onComplete={() => setBattleDone(true)} onClose={() => setReport(null)} />
   }
 
   return (
     <div>
+      <PracticePurpose section="stage" />
       <div className="section-title">秘境探索 · 已通关 {s.clearedStage}/{STAGES.length}</div>
 
       {chapters.map(ch => {
@@ -146,6 +167,7 @@ export function StagePanel() {
                 <div className="card-side">
                   <button
                     className="btn-sub"
+                    data-tut={open && st.id === s.clearedStage + 1 ? 'stage-challenge' : undefined}
                     disabled={!open}
                     onClick={() => {
                       // 首次进入（编队为空）自动填一套择优编队，
@@ -173,44 +195,34 @@ export function StagePanel() {
  * 战报：数字先归零，揭晓时才滚动到最终值，命中瞬间打一下闪光，
  * 胜负结果延后弹出——而不是面板一打开就把结论糊在脸上。
  */
-function StageReport({ report, onClose }: { report: Report; onClose: () => void }) {
-  const { revealed, impact, resultShown } = useRevealSequence()
-  const myShown = useCountUp(revealed ? report.myPower : 0, 550)
-  const enemyShown = useCountUp(revealed ? report.enemyPower : 0, 550)
-
+function StageReport({ report, done, onComplete, onClose }: { report: Report; done: boolean; onComplete: () => void; onClose: () => void }) {
   return (
     <div className="battle">
-      <ImpactFlash active={impact} />
-      <div className="section-title">{report.name}</div>
-      <img
-        className={'battle-boss' + (report.win && resultShown ? ' defeated' : '')}
-        src={sprite(report.sprite)}
-        alt=""
+      <PracticeBattleScene
+        report={{
+          kindLabel: '秘境战斗',
+          title: report.name,
+          enemyName: report.name,
+          enemyTroop: report.enemyTroop,
+          myPower: report.myPower,
+          enemyPower: report.enemyPower,
+          formation: report.formation,
+          deployed: report.deployed,
+          losses: report.losses,
+          win: report.win,
+        }}
+        onComplete={onComplete}
       />
-      <div className="battle-vs">
-        <div className="battle-side">
-          <div className="battle-num" style={{ color: 'var(--teal)' }}>
-            {fmt(myShown)}
-          </div>
-          <div className="battle-lbl">我方战力</div>
+      {done && (
+        <div className={'stage-result-card ' + (report.win ? 'win' : 'lose')}>
+          <div className="stage-result-title">{report.win ? '✦ 秘境已破' : '✧ 力有不逮'}</div>
+          <p>{report.win
+            ? `${report.firstClear ? '首通奖励已入储物袋。' : '再次挑战完成。'} ${report.unlockCultivator && report.firstClear ? '新的修士已解锁，可去“修士”查看。' : ''}`
+            : '本次没有推进关卡，也没有首通奖励；先补兵或调整克制编队，再挑战一次。'}</p>
+          <div className="stage-result-cost">本场兵损 <b>{report.losses}</b> · {report.firstClear && report.win ? '关卡已推进' : report.win ? '关卡不再重复发首通奖励' : '关卡未推进'}</div>
+          <button className="btn-main" onClick={onClose}>返回秘境</button>
         </div>
-        <div className="battle-mid">VS</div>
-        <div className="battle-side">
-          <div className="battle-num" style={{ color: 'var(--danger)' }}>
-            {fmt(enemyShown)}
-          </div>
-          <div className="battle-lbl">敌方战力</div>
-        </div>
-      </div>
-      <div className={'battle-res ' + (report.win ? 'win' : 'lose') + (resultShown ? ' shown' : '')}>
-        {report.win ? '✦ 秘境已破 ✦' : '✧ 力有不逮 ✧'}
-      </div>
-      <div className="sheet-desc battle-reward-in" style={{ textAlign: 'center' }}>
-        {report.win
-          ? `所获资源已入储物袋，本次出战损失 ${report.losses} 名部队。`
-          : `本次出战损失 ${report.losses} 名部队，未推进关卡且不发放首通奖励。请调整编队或补充兵力后再战。`}
-      </div>
-      <button className="btn-main" onClick={onClose}>返回</button>
+      )}
     </div>
   )
 }

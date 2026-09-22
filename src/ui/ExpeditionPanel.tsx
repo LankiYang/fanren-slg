@@ -7,6 +7,7 @@ import { Formation } from './Formation'
 import { ExpeditionBattleScene } from './ExpeditionBattleScene'
 import { Sheet } from './Sheet'
 import { fmt, fmtTime, sprite } from './util'
+import { PracticePurpose } from './PracticeGuide'
 
 const KIND_META: Record<ExpeditionNodeKind, { label: string; icon: string }> = {
   battle: { label: '破阵', icon: '⚔' },
@@ -71,12 +72,16 @@ export function ExpeditionPanel({ now }: { now: number }) {
 
   return (
     <div className="expedition-panel">
+      <PracticePurpose section="expedition">
+        <div className="practice-purpose-tip">每天先看路线再出发：稳妥路线保证推进，压榨路线追求积分与远征币；远征币在“战绩”里兑换资源和永久遗物。</div>
+      </PracticePurpose>
       <div className="expedition-heading">
         <div className="expedition-title-row">
           <img className="expedition-theme-art" src={sprite(theme.sprite)} alt="" />
           <div>
             <div className="expedition-title">{theme.name}</div>
             <div className="expedition-tagline">{theme.tagline}</div>
+            <div className="expedition-mode-note">每日 3 枚远征令 · 路线共 5 层 · 终点首领收益最高</div>
           </div>
         </div>
         <div className="expedition-energy">
@@ -108,6 +113,7 @@ export function ExpeditionPanel({ now }: { now: number }) {
                   return (
                     <button
                       className={'expedition-node ' + node.kind + (isSelected ? ' selected' : '') + (node.resolved ? ' resolved' : '') + (nodeOpen ? ' available' : '')}
+                      data-tut={nodeOpen && node.branch === 0 ? 'expedition-node' : undefined}
                       key={node.id}
                       disabled={!nodeOpen}
                       onClick={() => selectNode(node.id)}
@@ -124,7 +130,16 @@ export function ExpeditionPanel({ now }: { now: number }) {
         })}
       </div>
 
-      {selected ? (
+      {report ? (
+        <section className="expedition-report-wrap expedition-report-focus">
+          {(report.kind === 'battle' || report.kind === 'boss') && (
+            <ExpeditionBattleScene report={report} onComplete={() => setSceneDone(true)} />
+          )}
+          {((report.kind !== 'battle' && report.kind !== 'boss') || sceneDone) && (
+            <ExpeditionResult report={report} onClose={() => setReport(null)} />
+          )}
+        </section>
+      ) : selected ? (
         <section className="expedition-command">
           <div className="expedition-command-head">
             <div>
@@ -133,6 +148,11 @@ export function ExpeditionPanel({ now }: { now: number }) {
               <small>{selected.desc}</small>
             </div>
             {selected.enemyPower > 0 && <span className="expedition-enemy-power">敌阵 {fmt(selected.enemyPower)}</span>}
+          </div>
+
+          <div className="expedition-node-explain">
+            <b>这个节点做什么</b>
+            <span>{nodePurpose(selected.kind)}</span>
           </div>
 
           {selected.enemyPower > 0 && (
@@ -146,14 +166,14 @@ export function ExpeditionPanel({ now }: { now: number }) {
 
           <div className="expedition-choice">
             <button className={'expedition-choice-btn' + (choice === 'steady' ? ' active' : '')} onClick={() => setChoice('steady')}>
-              <b>稳妥推进</b><small>奖励 ×1 · 兵损较低</small>
+              <b>稳妥推进</b><small>成功推进 · 奖励 ×1 · 兵损较低</small>
             </button>
             <button className={'expedition-choice-btn risk' + (choice === 'risk' ? ' active' : '')} onClick={() => setChoice('risk')}>
-              <b>压榨路线</b><small>奖励 ×1.35 · 风险提高</small>
+              <b>压榨路线</b><small>成功奖励 ×1.35 · 失败不推进</small>
             </button>
           </div>
 
-          <button className="btn-main expedition-enter" onClick={doExplore} disabled={s.expeditionEnergy <= 0}>
+          <button className="btn-main expedition-enter" data-tut="expedition-enter" onClick={doExplore} disabled={s.expeditionEnergy <= 0}>
             消耗 1 枚远征令 · {KIND_META[selected.kind].label}
           </button>
           <div className="hint">{hint}</div>
@@ -164,17 +184,6 @@ export function ExpeditionPanel({ now }: { now: number }) {
           <b>{s.expeditionProgress >= 5 ? '今日首领已平定' : '路线等待开启'}</b>
           <span>{s.expeditionProgress >= 5 ? '明日换图，或前往商店使用远征币。' : '选择当前层的一条路线继续深入。'}</span>
         </div>
-      )}
-
-      {report && (
-        <section className="expedition-report-wrap">
-          {(report.kind === 'battle' || report.kind === 'boss') && (
-            <ExpeditionBattleScene report={report} onComplete={() => setSceneDone(true)} />
-          )}
-          {((report.kind !== 'battle' && report.kind !== 'boss') || sceneDone) && (
-            <ExpeditionResult report={report} onClose={() => setReport(null)} />
-          )}
-        </section>
       )}
 
       {showStats && (
@@ -263,6 +272,7 @@ function ExpeditionResult({ report, onClose }: { report: ExpeditionReport; onClo
       <div className={'expedition-result-mark ' + (report.win ? 'win' : 'lose')}>{report.win ? '✦' : '↩'}</div>
       <b>{report.outcome}</b>
       <small>{report.choice === 'risk' ? '压榨路线' : '稳妥推进'} · 积分 +{report.scoreGained} · 远征币 +{report.currencyGained}</small>
+      <small className={report.progressed ? 'expedition-progress-note' : 'expedition-failure-penalty'}>{report.progressed ? '路线已推进 1 层，下一层节点已开启。' : '路线未推进，当前节点保留，可补兵后再次挑战。'}</small>
       <small className={report.win ? 'expedition-penalty' : 'expedition-failure-penalty'}>{report.win ? '本次代价：' : '失败惩罚：'}{report.penalty}</small>
       {report.losses > 0 && <small className="expedition-loss">兵损 {report.losses}</small>}
       <div className="cost-row expedition-gains">
@@ -273,4 +283,14 @@ function ExpeditionResult({ report, onClose }: { report: ExpeditionReport; onClo
       {onClose && <button className="btn-sub" onClick={onClose}>返回路线</button>}
     </div>
   )
+}
+
+function nodePurpose(kind: ExpeditionNodeKind): string {
+  return ({
+    battle: '战斗节点，验证当前编队；胜利给积分和资源，失败会损兵并停在本层。',
+    gather: '采集节点，低风险拿资源；压榨路线可能多拿，但失败会消耗远征令。',
+    caravan: '护送节点，中风险拿资源与积分；适合想稳定完成路线的玩家。',
+    event: '天机节点，选择稳妥或压榨来换取不同收益；压榨失败不会推进。',
+    boss: '路线终点首领，收益最高；先补兵、看克制，再决定是否压榨。',
+  })[kind]
 }

@@ -11,9 +11,11 @@ import { SectPanel } from './ui/SectPanel'
 import { PracticePanel } from './ui/PracticePanel'
 import { OfflineSheet } from './ui/OfflineSheet'
 import { QuestPanel } from './ui/QuestPanel'
+import { JourneyGuide } from './ui/JourneyGuide'
 import { Tutorial } from './ui/Tutorial'
 import { BreakthroughCeremony } from './ui/BreakthroughCeremony'
-import { currentQuest } from './game/quests'
+import type { GuideRoute } from './game/guide'
+import type { PracticeSection } from './game/guide'
 import { sprite, fmt } from './ui/util'
 import { CharacterSelect } from './ui/CharacterSelect'
 import { SeekPanel } from './ui/SeekPanel'
@@ -29,13 +31,36 @@ export default function App() {
   const clearOfflineReport = useGame(x => x.clearOfflineReport)
   const [now, setNow] = useState(Date.now())
   const [tab, setTab] = useState<Tab>('home')
+  const [practiceSection, setPracticeSection] = useState<PracticeSection>('army')
   const [picked, setPicked] = useState<BuildingKey | null>(null)
   const [showBreak, setShowBreak] = useState(false)
   const [showQuests, setShowQuests] = useState(false)
   const [ceremonyRealm, setCeremonyRealm] = useState<string | null>(null)
-  const state = useGame()
-  const quest = currentQuest(state.claimedQuests)
-  const questDone = quest ? quest.done(state) : false
+  const goToGuideRoute = (route: GuideRoute) => {
+    const launchGuide = () => {
+      if (route.guideId) useGame.getState().startGuide(route.guideId)
+    }
+    setShowQuests(false)
+    setPicked(null)
+    setShowBreak(false)
+    if (route.kind === 'home') {
+      setTab('home')
+      if (route.building) setPicked(route.building)
+      if (route.focus === 'seek') {
+        window.setTimeout(() => document.querySelector('.seek-panel')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 0)
+      }
+      window.setTimeout(launchGuide, 80)
+      return
+    }
+    if (route.kind === 'practice') {
+      setPracticeSection(route.section)
+      setTab('practice')
+      window.setTimeout(launchGuide, 80)
+      return
+    }
+    setTab(route.kind)
+    window.setTimeout(launchGuide, 80)
+  }
 
   // 主循环：每 500ms 结算一次产出与升级完成
   useEffect(() => {
@@ -59,17 +84,7 @@ export default function App() {
 
             <SeekPanel />
 
-            {/* 任务追踪器：常驻显示「下一步该做什么」，兼作新手引导 */}
-            {quest && (
-              <button
-                className={'quest-track' + (questDone ? ' ready' : '')}
-                onClick={() => setShowQuests(true)}
-              >
-                <span className="quest-track-label">{questDone ? '✦ 可领取' : '当前目标'}</span>
-                <span className="quest-track-name">{quest.name}</span>
-                <span className="quest-track-desc">{quest.desc}</span>
-              </button>
-            )}
+            <JourneyGuide now={now} onOpen={() => setShowQuests(true)} onGo={goToGuideRoute} />
           </>
         )}
       </div>
@@ -101,14 +116,14 @@ export default function App() {
       )}
 
       {tab === 'practice' && (
-        <Sheet title="历练" sub="演武 · 秘境 · 远征 · 修士" onClose={() => setTab('home')}><PracticePanel now={now} /></Sheet>
+        <Sheet title="历练" sub="演武 · 秘境 · 远征 · 修士" onClose={() => setTab('home')}><PracticePanel now={now} initialTab={practiceSection} /></Sheet>
       )}
       {tab === 'sect' && (
         <Sheet title="宗门" onClose={() => setTab('home')}><SectPanel now={now} /></Sheet>
       )}
 
       {showQuests && (
-        <Sheet title="成长任务" onClose={() => setShowQuests(false)}><QuestPanel /></Sheet>
+        <Sheet title="道途指南" sub="当前目标 · 阶段路线 · 30 日节奏" onClose={() => setShowQuests(false)}><QuestPanel onGo={goToGuideRoute} /></Sheet>
       )}
 
       {showBreak && (

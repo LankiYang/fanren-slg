@@ -293,6 +293,10 @@ export interface GameState {
   activeIntro: string | null
   /** 当前功能引导播放到第几步 */
   introStep: number
+  /** 道途指南首次开始时间；旧存档缺失时由加载逻辑补齐。 */
+  journeyStartedAt: number
+  /** 由跨页面玩法写入的长期引导里程碑。 */
+  guideFlags: string[]
   /** 战区据点归属；当前原型使用本地 AI 对手，联机版替换为服务端快照。 */
   warfrontNodes: Record<string, WarfrontNodeState>
   /** 当前赛季的个人战功 */

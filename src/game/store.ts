@@ -22,7 +22,7 @@ import {
   buildCostFactor, buildSpeedFactor,
 } from './compute'
 import { QUESTS, questReward } from './quests'
-import { TUTORIAL, FEATURE_INTRO } from './tutorial'
+import { TUTORIAL, FEATURE_INTRO, GUIDE_TOURS } from './tutorial'
 import {
   GONGFA_MAP, gongfaCost, gongfaTimeMs,
   PILL_MAP, pillCost, type PillKey,
@@ -146,6 +146,8 @@ function initialState(): GameState {
     seenIntros: [],
     activeIntro: null,
     introStep: 0,
+    journeyStartedAt: now,
+    guideFlags: [],
     warfrontNodes: initialWarfrontNodes(),
     warfrontScore: 0,
     warfrontSectScore: 0,
@@ -194,6 +196,8 @@ function loadState(): GameState {
       seenIntros: parsed.seenIntros ?? base.seenIntros,
       activeIntro: null,
       introStep: 0,
+      journeyStartedAt: parsed.journeyStartedAt ?? base.journeyStartedAt,
+      guideFlags: parsed.guideFlags ?? base.guideFlags,
       warfrontNodes: { ...base.warfrontNodes, ...(parsed.warfrontNodes ?? {}) },
       warfrontScore: parsed.warfrontScore ?? base.warfrontScore,
       warfrontSectScore: parsed.warfrontSectScore ?? base.warfrontSectScore,
@@ -246,6 +250,9 @@ interface Store extends GameState {
   /** 顶栏飘字队列（不入存档，纯瞬时 UI 反馈） */
   floats: FloatEvent[]
   popFloat: (id: number) => void
+  /** 当前由道途指南发起的阻断式任务教程（不入存档） */
+  activeGuide: string | null
+  guideStep: number
 
   tick: () => void
   startUpgrade: (key: BuildingKey) => Result
@@ -258,7 +265,7 @@ interface Store extends GameState {
   trainTroop: (key: TroopKey, count: number) => Result
   maxTrainable: (key: TroopKey) => number
   levelUpCultivator: (key: string) => Result
-  challengeStage: (id: number) => { ok: boolean; win: boolean; myPower: number; enemyPower: number; deployed?: number; losses?: number; reason?: string }
+  challengeStage: (id: number) => { ok: boolean; win: boolean; myPower: number; enemyPower: number; deployed?: number; losses?: number; formation?: Record<TroopKey, number>; firstClear?: boolean; reason?: string }
   unlockQueue: () => Result
   challengeBoss: () => { ok: boolean; report?: BossReport; reason?: string }
   bossReadyAt: () => number
@@ -281,9 +288,13 @@ interface Store extends GameState {
   buyExpeditionShop: (id: string) => Result
   nextTutorialStep: () => void
   skipTutorial: () => void
+  startGuide: (id: string) => void
+  nextGuideStep: () => void
+  skipGuide: () => void
   maybeStartIntro: (id: string) => void
   nextIntroStep: () => void
   skipIntro: () => void
+  markGuideFlag: (flag: string) => void
   reset: () => void
 }
 
@@ -291,6 +302,8 @@ export const useGame = create<Store>((set, get) => ({
   ...loadState(),
   offlineReport: null,
   floats: [],
+  activeGuide: null,
+  guideStep: 0,
 
   clearOfflineReport: () => set({ offlineReport: null }),
   popFloat: (id) => set(s => ({ floats: s.floats.filter(f => f.id !== id) })),
@@ -600,11 +613,13 @@ export const useGame = create<Store>((set, get) => ({
     }
 
     const myPower = battlePower(s, stage.enemyTroop)
+    const committedFormation = { ...s.formation }
     const deployed = formationUsed(s)
     if (deployed <= 0) {
       return { ok: false, win: false, myPower, enemyPower: stage.enemyPower, reason: '请先在演武场配置出战编队' }
     }
     const win = myPower >= stage.enemyPower
+    const firstClear = win && id > s.clearedStage
     const losses = calculateBattleLosses({
       deployed,
       myPower,
@@ -619,7 +634,7 @@ export const useGame = create<Store>((set, get) => ({
     })
     const injured = applyFormationLosses(s.troops, s.formation, losses, deployed)
 
-    if (win && id > s.clearedStage) {
+    if (firstClear) {
       // 首通：发奖 + 解锁修士。奖励同样受仓库上限约束，否则会凭空突破上限。
       const cap = currentCap(s)
       const resources = { ...s.resources }
@@ -648,7 +663,7 @@ export const useGame = create<Store>((set, get) => ({
       persist(get())
     }
 
-    return { ok: true, win, myPower, enemyPower: stage.enemyPower, deployed, losses }
+    return { ok: true, win, myPower, enemyPower: stage.enemyPower, deployed, losses, formation: committedFormation, firstClear }
   },
 
   unlockQueue: () => {
@@ -1128,11 +1143,30 @@ export const useGame = create<Store>((set, get) => ({
     persist(get())
   },
 
+  startGuide: (id) => {
+    if (!GUIDE_TOURS[id]?.length) return
+    set({ activeGuide: id, guideStep: 0, activeIntro: null, introStep: 0 })
+  },
+
+  nextGuideStep: () => {
+    const s = get()
+    if (!s.activeGuide) return
+    const steps = GUIDE_TOURS[s.activeGuide] ?? []
+    const next = s.guideStep + 1
+    if (next >= steps.length) set({ activeGuide: null, guideStep: 0 })
+    else set({ guideStep: next })
+  },
+
+  skipGuide: () => {
+    if (!get().activeGuide) return
+    set({ activeGuide: null, guideStep: 0 })
+  },
+
   // 功能解锁分段引导：开局教程结束后，玩家第一次真正看到某个功能面板时才播放，
   // 同一时间只放一段（activeIntro 非空就直接跳过），避免多个解锁挤在一起连环打断。
   maybeStartIntro: (id) => {
     const s = get()
-    if (!s.tutorialDone || s.activeIntro || s.seenIntros.includes(id)) return
+    if (!s.tutorialDone || s.activeIntro || s.activeGuide || s.seenIntros.includes(id)) return
     if (!FEATURE_INTRO[id as keyof typeof FEATURE_INTRO]?.length) return
     set({ activeIntro: id, introStep: 0 })
   },
@@ -1157,9 +1191,16 @@ export const useGame = create<Store>((set, get) => ({
     persist(get())
   },
 
+  markGuideFlag: (flag) => {
+    const s = get()
+    if (s.guideFlags.includes(flag)) return
+    set({ guideFlags: [...s.guideFlags, flag] })
+    persist(get())
+  },
+
   reset: () => {
     localStorage.removeItem(SAVE_KEY)
-    set({ ...initialState(), offlineReport: null })
+    set({ ...initialState(), offlineReport: null, activeGuide: null, guideStep: 0 })
   },
 }))
 
@@ -1178,6 +1219,7 @@ function persist(s: GameState) {
       pills: s.pills, pillActive: s.pillActive, pillCrafting: s.pillCrafting,
       artifacts: s.artifacts, formation: s.formation,
       tutorialStep: s.tutorialStep, tutorialDone: s.tutorialDone, seenIntros: s.seenIntros,
+      journeyStartedAt: s.journeyStartedAt, guideFlags: s.guideFlags,
       warfrontNodes: s.warfrontNodes, warfrontScore: s.warfrontScore,
       warfrontSectScore: s.warfrontSectScore, warfrontCooldownUntil: s.warfrontCooldownUntil,
       warfrontTactic: s.warfrontTactic,

@@ -1,5 +1,5 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react'
-import { TUTORIAL, FEATURE_INTRO, GUIDE_NAME } from '../game/tutorial'
+import { TUTORIAL, FEATURE_INTRO, GUIDE_TOURS, GUIDE_NAME } from '../game/tutorial'
 import { useGame } from '../game/store'
 import { sprite } from './util'
 
@@ -33,19 +33,25 @@ export function Tutorial() {
   const introStep = useGame(x => x.introStep)
   const nextIntro = useGame(x => x.nextIntroStep)
   const skipIntro = useGame(x => x.skipIntro)
+  const activeGuideId = useGame(x => x.activeGuide)
+  const guideStep = useGame(x => x.guideStep)
+  const nextGuide = useGame(x => x.nextGuideStep)
+  const skipGuide = useGame(x => x.skipGuide)
   const [hole, setHole] = useState<Hole | null>(null)
   const [layout, setLayout] = useState<DialogLayout>({ mode: 'bottom' })
   const rafRef = useRef<number>(0)
   const dialogRef = useRef<HTMLDivElement>(null)
 
-  // 开局引导没走完时优先播它；走完之后才轮到功能解锁的分段引导，脚本来源不同但共用同一套渲染/定位逻辑
+  // 开局引导优先级最高；任务教程正在播放时，功能首次引导让路，避免两个蒙层叠在一起
   const onboarding = !done
+  const guideSteps = activeGuideId ? GUIDE_TOURS[activeGuideId] : undefined
   const introSteps = activeIntroId ? FEATURE_INTRO[activeIntroId as keyof typeof FEATURE_INTRO] : undefined
-  const cur = onboarding ? TUTORIAL[step] : introSteps?.[introStep]
-  const curLen = onboarding ? TUTORIAL.length : (introSteps?.length ?? 0)
-  const curStep = onboarding ? step : introStep
-  const advance = onboarding ? nextStep : nextIntro
-  const doSkip = onboarding ? skip : skipIntro
+  const taskGuide = !onboarding && !!guideSteps
+  const cur = onboarding ? TUTORIAL[step] : taskGuide ? guideSteps?.[guideStep] : introSteps?.[introStep]
+  const curLen = onboarding ? TUTORIAL.length : taskGuide ? (guideSteps?.length ?? 0) : (introSteps?.length ?? 0)
+  const curStep = onboarding ? step : taskGuide ? guideStep : introStep
+  const advance = onboarding ? nextStep : taskGuide ? nextGuide : nextIntro
+  const doSkip = onboarding ? skip : taskGuide ? skipGuide : skipIntro
   const active = !!cur
 
   // 目标位置会随面板开合、滚动而变，所以要持续跟随，不是算一次就完。

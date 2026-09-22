@@ -1,78 +1,85 @@
 import { useState } from 'react'
+import { GUIDE_CHAPTERS, chapterProgress, currentGuide } from '../game/guide'
+import type { GuideRoute } from '../game/guide'
 import { QUESTS, questReward } from '../game/quests'
 import { RESOURCE_META } from '../game/data'
 import type { ResourceKey } from '../game/types'
 import { useGame } from '../game/store'
 import { sprite, fmt } from './util'
 
-/** 成长任务：兼作新手引导与留存钩子 */
-export function QuestPanel() {
-  const s = useGame()
+interface QuestPanelProps {
+  onGo: (route: GuideRoute) => void
+}
+
+/** 保留旧组件名，避免外部引用变更；实际内容升级为完整道途指南。 */
+export function QuestPanel({ onGo }: QuestPanelProps) {
+  const state = useGame()
   const claim = useGame(x => x.claimQuest)
   const [hint, setHint] = useState('')
-
-  const claimedCount = s.claimedQuests.length
+  const guide = currentGuide(state)
 
   return (
-    <div>
-      <div className="section-title">成长任务 · 已完成 {claimedCount}/{QUESTS.length}</div>
+    <div className="guide-panel">
+      <div className="guide-overview">
+        <b>不知道下一步做什么？</b>
+        <span>先完成高亮阶段的当前任务。每条任务都写明“为什么做”和“怎么做”，点“去做”会直接打开对应入口。</span>
+      </div>
+      <div className="guide-current-banner">
+        <span>当前阶段 · {guide.chapter.dayRange}</span>
+        <b>{guide.chapter.title}</b>
+        <small>{guide.chapter.subtitle}</small>
+      </div>
+      <div className="guide-why"><b>这一阶段为什么重要</b><span>{guide.chapter.why}</span></div>
+      <div className="guide-routine">
+        <div className="guide-section-title">每天上线顺序</div>
+        {guide.chapter.routines.map((routine, index) => <div className="guide-routine-row" key={routine}><i>{index + 1}</i><span>{routine}</span></div>)}
+      </div>
 
-      {QUESTS.map(q => {
-        const claimed = s.claimedQuests.includes(q.id)
-        const done = q.done(s)
-        const prog = q.progress?.(s)
-        const reward = questReward(s, q)
-
+      {GUIDE_CHAPTERS.map(chapter => {
+        const progress = chapterProgress(chapter, state)
+        const active = chapter.id === guide.chapter.id
+        const quests = chapter.questIds.map(id => QUESTS.find(quest => quest.id === id)).filter(item => !!item)
         return (
-          <div className={'card' + (claimed ? ' locked-card' : '')} key={q.id}>
-            <div className="card-body">
-              <div className="card-name">
-                {q.name}
-                {claimed && <span style={{ color: 'var(--ok)', fontSize: 11 }}> ✓ 已领取</span>}
-              </div>
-              <div className="card-meta">
-                {q.desc}
-                {prog && !claimed && (
-                  <> · <span style={{ color: done ? 'var(--ok)' : 'var(--text-dim)' }}>
-                    {fmt(Math.min(prog.cur, prog.target))}/{fmt(prog.target)}
-                  </span></>
-                )}
-              </div>
-              {!claimed && (
-                <div className="cost-row" style={{ marginTop: 6, marginBottom: 0 }}>
-                  {(Object.keys(reward) as ResourceKey[]).map(k => (
-                    <span className="cost" key={k}>
-                      <img src={sprite(RESOURCE_META[k].icon)} alt="" />
-                      {fmt(reward[k] ?? 0)}
-                    </span>
-                  ))}
+          <details className={'guide-chapter' + (active ? ' active' : '')} key={chapter.id} open={active}>
+            <summary>
+              <span><b>{chapter.title}</b><small>{chapter.dayRange} · {chapter.subtitle}</small></span>
+              <em>{progress.claimed}/{progress.total}</em>
+            </summary>
+            <div className="guide-chapter-copy">{chapter.why}</div>
+            {quests.map(quest => {
+              const claimed = state.claimedQuests.includes(quest!.id)
+              const done = quest!.done(state)
+              const progressValue = quest!.progress?.(state)
+              const reward = questReward(state, quest!)
+              return (
+                <div className={'guide-quest' + (claimed ? ' claimed' : '') + (done && !claimed ? ' ready' : '')} key={quest!.id}>
+                  <div className="guide-quest-copy">
+                    <div className="guide-quest-title"><b>{quest!.name}</b><span>{claimed ? '已领取' : done ? '可领取' : '进行中'}</span></div>
+                    <div className="guide-quest-desc">{quest!.desc}{progressValue && <> · <GuideNumber current={progressValue.cur} target={progressValue.target} /></>}</div>
+                    <div className="guide-quest-detail"><b>为什么</b>{quest!.why}</div>
+                    <div className="guide-quest-detail"><b>怎么做</b>{quest!.how}</div>
+                    {!claimed && <div className="guide-reward">奖励 {(Object.keys(reward) as ResourceKey[]).map(key => <span key={key}><img src={sprite(RESOURCE_META[key].icon)} alt="" />{fmt(reward[key] ?? 0)}</span>)}</div>}
+                    {progressValue && !claimed && <div className="progress guide-quest-progress"><i style={{ width: `${Math.min(100, progressValue.cur / Math.max(1, progressValue.target) * 100)}%` }} /></div>}
+                  </div>
+                  {!claimed && <div className="guide-quest-actions">
+                    {!done && <button className="btn-sub" type="button" onClick={() => onGo({ ...quest!.route, guideId: quest!.id })}>去做</button>}
+                    <button className="btn-sub" type="button" disabled={!done} onClick={() => {
+                      const result = claim(quest!.id)
+                      setHint(result.ok ? `已领取「${quest!.name}」` : (result.reason ?? ''))
+                    }}>{done ? '领取' : '未完成'}</button>
+                  </div>}
                 </div>
-              )}
-              {prog && !claimed && (
-                <div className="progress">
-                  <i style={{ width: `${Math.min(100, (prog.cur / prog.target) * 100)}%` }} />
-                </div>
-              )}
-            </div>
-            <div className="card-side">
-              {!claimed && (
-                <button
-                  className="btn-sub"
-                  disabled={!done}
-                  style={done ? { borderColor: 'var(--ok)', color: 'var(--ok)' } : undefined}
-                  onClick={() => {
-                    const r = claim(q.id)
-                    setHint(r.ok ? `已领取「${q.name}」` : (r.reason ?? ''))
-                  }}
-                >
-                  {done ? '领取' : '进行中'}
-                </button>
-              )}
-            </div>
-          </div>
+              )
+            })}
+            <div className="guide-next">完成本段后：{chapter.next}</div>
+          </details>
         )
       })}
-      <div className="hint">{hint}</div>
+      {hint && <div className="hint guide-hint">{hint}</div>}
     </div>
   )
+}
+
+function GuideNumber({ current, target }: { current: number; target: number }) {
+  return <span className="guide-number">{fmt(Math.min(current, target))}/{fmt(target)}</span>
 }

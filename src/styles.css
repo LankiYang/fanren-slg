@@ -434,6 +434,99 @@ button {
   white-space: nowrap;
 }
 
+/* 道途指南追踪器只保留一眼能读完的摘要，详细原因和做法放进底部面板，避免挡住主城。 */
+.journey-guide {
+  max-width: min(286px, calc(100% - 16px));
+  padding: 8px 9px 7px;
+  gap: 3px;
+}
+
+.journey-guide-head,
+.journey-guide-actions,
+.journey-guide-chapter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.journey-guide-open,
+.journey-guide-action {
+  border: 1px solid rgba(216,177,104,.34);
+  border-radius: 4px;
+  padding: 3px 6px;
+  background: rgba(216,177,104,.08);
+  color: var(--gold);
+  font-size: 9px;
+  white-space: nowrap;
+}
+
+.journey-guide-action {
+  padding: 4px 10px;
+  font-size: 10px;
+}
+
+.journey-guide-action.ready { border-color: rgba(111,211,151,.5); color: var(--ok); }
+.journey-guide-chapter { color: var(--gold); font-size: 11px; }
+.journey-guide-chapter span { color: var(--text-dim); font-size: 9px; }
+.journey-guide-count { color: var(--text-dim); font-size: 9px; }
+.journey-guide-progress { height: 2px; margin-top: 2px; border-radius: 2px; background: rgba(255,255,255,.08); overflow: hidden; }
+.journey-guide-progress i { display: block; height: 100%; border-radius: inherit; background: var(--gold); transition: width .25s ease; }
+
+/* ── 道途指南面板 ── */
+.guide-panel { min-width: 0; }
+.guide-overview,
+.guide-current-banner,
+.guide-why,
+.guide-routine { border: 1px solid rgba(216,177,104,.2); border-radius: 8px; background: rgba(216,177,104,.06); padding: 9px 10px; margin-bottom: 10px; }
+.guide-overview { display: flex; flex-direction: column; gap: 4px; }
+.guide-overview b { color: var(--gold); font-size: 12px; }
+.guide-overview span,
+.guide-why span { color: var(--text-dim); font-size: 11px; line-height: 1.55; }
+.guide-current-banner { display: flex; flex-direction: column; gap: 2px; border-left: 3px solid var(--gold); }
+.guide-current-banner span { color: var(--gold-dim); font-size: 9px; letter-spacing: .8px; }
+.guide-current-banner b { color: var(--text); font-size: 15px; }
+.guide-current-banner small { color: var(--text-dim); font-size: 10px; }
+.guide-why { display: flex; flex-direction: column; gap: 4px; border-color: rgba(79,209,197,.2); background: rgba(79,209,197,.05); }
+.guide-why b { color: var(--teal); font-size: 10px; }
+.guide-section-title { color: var(--gold); font-size: 11px; margin: 11px 0 7px; }
+.guide-routine { padding-bottom: 7px; }
+.guide-routine .guide-section-title { margin-top: 0; }
+.guide-routine-row { display: flex; align-items: flex-start; gap: 7px; margin: 6px 0; color: var(--text-dim); font-size: 11px; line-height: 1.45; }
+.guide-routine-row i { display: inline-flex; align-items: center; justify-content: center; flex: 0 0 17px; width: 17px; height: 17px; border-radius: 50%; background: rgba(216,177,104,.15); color: var(--gold); font-size: 9px; font-style: normal; }
+.guide-chapter { margin-bottom: 7px; border: 1px solid rgba(216,177,104,.16); border-radius: 8px; background: rgba(255,255,255,.025); overflow: hidden; }
+.guide-chapter.active { border-color: rgba(216,177,104,.42); }
+.guide-chapter > summary { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; cursor: pointer; list-style: none; }
+.guide-chapter > summary::-webkit-details-marker { display: none; }
+.guide-chapter > summary::after { content: '⌄'; color: var(--text-dim); font-size: 13px; transition: transform .15s; }
+.guide-chapter[open] > summary::after { transform: rotate(180deg); }
+.guide-chapter > summary > span { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
+.guide-chapter > summary b { color: var(--text); font-size: 12px; }
+.guide-chapter.active > summary b { color: var(--gold); }
+.guide-chapter > summary small { overflow: hidden; color: var(--text-dim); font-size: 9px; text-overflow: ellipsis; white-space: nowrap; }
+.guide-chapter > summary em { flex: 0 0 auto; color: var(--text-dim); font-size: 10px; font-style: normal; }
+.guide-chapter-copy { padding: 0 10px 8px; color: var(--text-dim); font-size: 10px; line-height: 1.55; }
+.guide-quest { display: flex; align-items: flex-start; gap: 8px; padding: 9px 10px; border-top: 1px solid rgba(255,255,255,.06); }
+.guide-quest.ready { background: rgba(111,211,151,.055); }
+.guide-quest.claimed { opacity: .58; }
+.guide-quest-copy { flex: 1; min-width: 0; }
+.guide-quest-title { display: flex; align-items: center; gap: 6px; }
+.guide-quest-title b { color: var(--text); font-size: 12px; }
+.guide-quest-title span { color: var(--text-dim); font-size: 9px; }
+.guide-quest.ready .guide-quest-title span { color: var(--ok); }
+.guide-quest-desc { margin-top: 2px; color: var(--text-dim); font-size: 10px; line-height: 1.45; }
+.guide-quest-detail { margin-top: 5px; color: var(--text-dim); font-size: 10px; line-height: 1.5; }
+.guide-quest-detail b { display: inline-block; min-width: 34px; margin-right: 4px; color: var(--teal); font-size: 9px; }
+.guide-reward { display: flex; flex-wrap: wrap; align-items: center; gap: 7px; margin-top: 6px; color: var(--gold-dim); font-size: 9px; }
+.guide-reward span { display: inline-flex; align-items: center; gap: 2px; color: var(--text-dim); }
+.guide-reward img { width: 13px; height: 13px; object-fit: contain; }
+.guide-number { color: var(--gold); font-variant-numeric: tabular-nums; }
+.guide-quest-progress { margin: 6px 0 0; height: 3px; }
+.guide-quest-actions { display: flex; flex-direction: column; gap: 5px; flex: 0 0 auto; padding-top: 2px; }
+.guide-quest-actions .btn-sub { min-width: 49px; padding: 6px 7px; font-size: 10px; }
+.guide-next { padding: 8px 10px 10px; color: var(--gold-dim); font-size: 10px; line-height: 1.5; }
+.guide-hint { margin-bottom: 4px; }
+
 /* ══ 新手引导（阻断式蒙层）══ */
 .tut-root {
   position: fixed;
@@ -1037,21 +1130,24 @@ button {
 /* ── 共享战争地图：地图是主操作面，面板只承载命令 ── */
 .warfront-panel { padding-bottom: 8px; }
 /* 战区改为整屏页签（不再是 72% 高的弹层），直接吃满 .scene-wrap 剩余高度，自行滚动。 */
-.scene-wrap > .warfront-panel { flex: 1; min-height: 0; overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 8px 8px 16px; animation: rise .18s ease-out; }
-.scene-wrap > .warfront-panel .warfront-map-canvas { min-height: min(56vh, 520px); aspect-ratio: unset; }
+.scene-wrap > .warfront-panel { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; -webkit-overflow-scrolling: touch; padding: 8px 8px 16px; animation: rise .18s ease-out; }
+.scene-wrap > .warfront-panel .warfront-map-stage { position: relative; flex: 0 0 clamp(280px, 44vh, 520px); height: clamp(280px, 44vh, 520px); min-height: 0; }
+.scene-wrap > .warfront-panel .warfront-map-canvas { height: 100%; min-height: 0; aspect-ratio: unset; }
 .warfront-map-shell { margin: 0 -2px 10px; border: 1px solid rgba(216,177,104,.32); border-radius: 8px; overflow: hidden; background: #0b171d; box-shadow: 0 12px 28px rgba(0,0,0,.24); }
 .warfront-map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border-bottom: 1px solid rgba(216,177,104,.18); background: linear-gradient(90deg, rgba(19,49,52,.78), rgba(25,32,47,.75)); }
 .warfront-map-toolbar b { display: block; color: var(--text); font-size: 12px; font-weight: 600; margin-top: 2px; }
 .warfront-map-kicker, .warfront-command-kicker { display: block; color: var(--gold-dim); font-size: 9px; letter-spacing: 1px; text-transform: uppercase; }
 .warfront-map-live { display: flex; align-items: center; gap: 5px; color: var(--teal); font-size: 9px; white-space: nowrap; }
 .warfront-map-live i, .warfront-status-dot { display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: var(--teal); box-shadow: 0 0 9px rgba(79,209,197,.85); animation: map-live-pulse 1.6s ease-in-out infinite; }
-.warfront-map-canvas { position: relative; aspect-ratio: 1.22; min-height: 300px; overflow: hidden; background: linear-gradient(155deg, #152f36 0%, #10252d 42%, #172a35 100%); }
-.warfront-map-canvas::before { content: ''; position: absolute; inset: 0; opacity: .42; background-image: linear-gradient(28deg, transparent 45%, rgba(89,154,142,.12) 46%, transparent 48%), linear-gradient(-18deg, transparent 46%, rgba(208,177,104,.08) 47%, transparent 49%); background-size: 82px 64px, 106px 88px; pointer-events: none; }
-.warfront-map-grid { position: absolute; inset: 0; opacity: .22; background-image: linear-gradient(rgba(136,205,184,.16) 1px, transparent 1px), linear-gradient(90deg, rgba(136,205,184,.16) 1px, transparent 1px); background-size: 32px 32px; mask-image: linear-gradient(180deg, rgba(0,0,0,.85), transparent 92%); pointer-events: none; }
-.warfront-roads { position: absolute; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
-.warfront-roads line { stroke: rgba(216,177,104,.28); stroke-width: .7; stroke-dasharray: 2.2 1.6; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 3px rgba(216,177,104,.18)); }
-.warfront-map-watermark { position: absolute; left: 50%; top: 58%; transform: translate(-50%, -50%) rotate(-12deg); color: rgba(137,201,185,.1); font-size: 64px; letter-spacing: 12px; font-weight: 700; pointer-events: none; }
-.warfront-map-compass { position: absolute; right: 12px; top: 12px; display: grid; place-items: center; width: 29px; height: 29px; border: 1px solid rgba(216,177,104,.34); border-radius: 50%; color: var(--gold-dim); font-size: 10px; opacity: .82; pointer-events: none; }
+.warfront-map-canvas { position: relative; isolation: isolate; aspect-ratio: 1.22; min-height: 300px; overflow: hidden; background: linear-gradient(155deg, #152f36 0%, #10252d 42%, #172a35 100%); }
+.warfront-map-terrain { position: absolute; z-index: 0; inset: -1%; width: 102%; height: 102%; object-fit: cover; opacity: .94; filter: saturate(.84) brightness(.78) contrast(1.06); pointer-events: none; animation: warfront-terrain-breathe 18s ease-in-out infinite alternate; }
+.warfront-map-canvas::before { content: ''; position: absolute; z-index: 1; inset: 0; opacity: .34; background-image: linear-gradient(28deg, transparent 45%, rgba(89,154,142,.12) 46%, transparent 48%), linear-gradient(-18deg, transparent 46%, rgba(208,177,104,.08) 47%, transparent 49%); background-size: 82px 64px, 106px 88px; pointer-events: none; }
+.warfront-map-atmosphere { position: absolute; z-index: 2; inset: 0; background: radial-gradient(circle at 50% 8%, rgba(216,177,104,.18), transparent 23%), radial-gradient(circle at 23% 76%, rgba(79,209,197,.16), transparent 27%), radial-gradient(circle at 76% 79%, rgba(217,112,112,.12), transparent 25%), linear-gradient(180deg, rgba(4,10,16,.08), rgba(4,10,16,.38)); mix-blend-mode: screen; pointer-events: none; }
+.warfront-map-grid { position: absolute; z-index: 3; inset: 0; opacity: .12; background-image: linear-gradient(rgba(136,205,184,.2) 1px, transparent 1px), linear-gradient(90deg, rgba(136,205,184,.2) 1px, transparent 1px); background-size: 32px 32px; mask-image: linear-gradient(180deg, rgba(0,0,0,.85), transparent 92%); pointer-events: none; }
+.warfront-roads { position: absolute; z-index: 3; inset: 0; width: 100%; height: 100%; overflow: visible; pointer-events: none; }
+.warfront-roads line { stroke: rgba(239,204,126,.56); stroke-width: .75; stroke-dasharray: 2.2 1.6; vector-effect: non-scaling-stroke; filter: drop-shadow(0 0 3px rgba(216,177,104,.38)); animation: warfront-road-flow 5s linear infinite; }
+.warfront-map-watermark { position: absolute; z-index: 3; left: 50%; top: 58%; transform: translate(-50%, -50%) rotate(-12deg); color: rgba(137,201,185,.16); font-size: 64px; letter-spacing: 12px; font-weight: 700; pointer-events: none; }
+.warfront-map-compass { position: absolute; z-index: 5; right: 12px; top: 12px; display: grid; place-items: center; width: 29px; height: 29px; border: 1px solid rgba(216,177,104,.48); border-radius: 50%; color: var(--gold-dim); font-size: 10px; opacity: .9; background: rgba(7,16,23,.28); pointer-events: none; }
 .warfront-map-compass span { color: var(--gold); font-size: 12px; line-height: 8px; }
 .warfront-map-node { position: absolute; z-index: 4; display: flex; align-items: center; gap: 5px; width: 94px; min-height: 42px; padding: 4px 5px 4px 4px; transform: translate(-50%, -50%); text-align: left; color: var(--text); border: 1px solid rgba(213,225,217,.3); border-radius: 6px; background: rgba(11,22,29,.88); box-shadow: 0 5px 12px rgba(0,0,0,.28); transition: left .8s ease, top .8s ease, border-color .2s, box-shadow .2s, transform .2s; }
 .warfront-map-node:hover, .warfront-map-node.selected { z-index: 8; transform: translate(-50%, -50%) scale(1.045); border-color: var(--gold); box-shadow: 0 0 0 2px rgba(216,177,104,.16), 0 7px 18px rgba(0,0,0,.38); }
@@ -1071,6 +1167,7 @@ button {
 .rival .warfront-node-ring { color: var(--danger); background: rgba(217,112,112,.11); }
 .warfront-node-copy { min-width: 0; display: flex; flex-direction: column; gap: 1px; }
 .warfront-node-copy b { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 10px; font-weight: 600; }
+.warfront-node-kind { color: var(--gold-dim); font-size: 7px; letter-spacing: .5px; }
 .warfront-node-copy small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-dim); font-size: 8px; }
 .warfront-node-guard { position: absolute; left: 4px; bottom: -13px; color: rgba(232,226,212,.68); font-size: 8px; white-space: nowrap; pointer-events: none; }
 .warfront-node-banner { position: absolute; right: 3px; top: -9px; color: var(--gold); font-size: 12px; filter: drop-shadow(0 1px 2px #061015); }
@@ -1108,7 +1205,7 @@ button {
 .legend-dot.mine { background: var(--teal); } .legend-dot.rival { background: var(--danger); }
 .warfront-battle-drawer { position: relative; margin: 0 0 10px; padding: 8px; border: 1px solid rgba(216,177,104,.38); border-radius: 7px; background: rgba(13,27,35,.96); box-shadow: 0 8px 20px rgba(0,0,0,.24); animation: battle-drawer-in .22s ease-out; }
 .warfront-battle-drawer-title { display: flex; align-items: center; justify-content: space-between; color: var(--gold); font-size: 11px; }
-.warfront-command-bar { margin: 0 8px 8px; padding: 10px; border: 1px solid rgba(216,177,104,.28); border-radius: 7px; background: linear-gradient(145deg, rgba(23,39,48,.94), rgba(18,28,38,.94)); animation: command-dock-in .18s ease-out; }
+.warfront-command-bar { position: absolute; z-index: 20; left: 8px; right: 8px; bottom: 8px; max-height: calc(100% - 16px); overflow-y: auto; overscroll-behavior: contain; scrollbar-width: thin; margin: 0; padding: 10px; border: 1px solid rgba(216,177,104,.36); border-radius: 7px; background: linear-gradient(145deg, rgba(23,39,48,.97), rgba(18,28,38,.97)); box-shadow: 0 6px 16px rgba(0,0,0,.34); animation: command-dock-in .18s ease-out; }
 .warfront-command-bar.collapsed { padding-bottom: 8px; }
 .warfront-command-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
 .warfront-command-heading b, .warfront-command-heading small { display: block; }
@@ -1121,6 +1218,12 @@ button {
 .warfront-energy-pips i { width: 7px; height: 7px; border-radius: 50%; background: rgba(255,255,255,.12); border: 1px solid rgba(216,177,104,.3); transition: background-color .25s, box-shadow .25s; }
 .warfront-energy-pips i.on { background: var(--gold); box-shadow: 0 0 6px rgba(216,177,104,.85); border-color: var(--gold); }
 .warfront-command-toggle { padding: 2px 5px; border-bottom: 1px solid rgba(216,177,104,.34); color: var(--gold-dim); font-size: 9px; white-space: nowrap; }
+.warfront-command-summary { display: grid; grid-template-columns: minmax(58px, .7fr) minmax(82px, 1fr) minmax(106px, 1.25fr); gap: 6px; align-items: stretch; margin-top: 8px; }
+.warfront-command-stat { display: grid; grid-template-columns: auto 1fr; align-content: center; column-gap: 4px; min-width: 0; padding: 5px 6px; border: 1px solid rgba(255,255,255,.1); border-radius: 5px; background: rgba(255,255,255,.035); }
+.warfront-command-stat span { grid-column: 1 / -1; color: var(--text-dim); font-size: 8px; }
+.warfront-command-stat b { min-width: 0; overflow: hidden; text-overflow: ellipsis; color: var(--text); font-size: 13px; font-variant-numeric: tabular-nums; }
+.warfront-command-stat small { align-self: end; overflow: hidden; color: var(--text-dim); font-size: 8px; white-space: nowrap; }
+.warfront-march-button { width: auto; min-width: 0; padding: 7px 8px; font-size: 11px; white-space: nowrap; }
 .warfront-formation { margin-top: 11px; }
 .warfront-formation > summary { display: flex; align-items: center; justify-content: space-between; color: var(--gold-dim); font-size: 11px; cursor: pointer; list-style: none; }
 .warfront-formation > summary::-webkit-details-marker { display: none; }
@@ -1128,6 +1231,8 @@ button {
 .warfront-formation[open] > summary::before { content: '▾'; }
 .warfront-formation > summary .btn-sub { margin-left: auto; padding: 2px 7px; font-size: 9px; }
 .warfront-formation .online-troop { margin-top: 5px; }
+@keyframes warfront-terrain-breathe { from { transform: scale(1.01); } to { transform: scale(1.045); } }
+@keyframes warfront-road-flow { to { stroke-dashoffset: -16; } }
 @keyframes map-live-pulse { 50% { opacity: .45; transform: scale(.7); } }
 @keyframes map-position-pulse { 0% { opacity: .85; transform: scale(.6); } 100% { opacity: 0; transform: scale(1.9); } }
 @keyframes army-bob { 0%,100% { transform: translateY(0); } 50% { transform: translateY(-3px); } }
@@ -1264,7 +1369,7 @@ button {
 @keyframes battle-hit { 0%,100% { transform: translateX(0) } 30% { transform: translateX(-7px) } 60% { transform: translateX(5px) } }
 .warfront-combatant.rival.hit { animation-name: battle-hit-rival; }
 @keyframes battle-hit-rival { 0%,100% { transform: translateX(0) } 30% { transform: translateX(7px) } 60% { transform: translateX(-5px) } }
-@media (max-width: 360px) { .warfront-battle-field { grid-template-columns: minmax(0,1fr) 72px minmax(0,1fr); } .warfront-combatant-unit { width: 58px; height: 58px; } .warfront-battle-text { width: 68px; font-size: 8px; } }
+@media (max-width: 360px) { .warfront-battle-field { grid-template-columns: minmax(0,1fr) 72px minmax(0,1fr); } .warfront-combatant-unit { width: 58px; height: 58px; } .warfront-battle-text { width: 68px; font-size: 8px; } .warfront-command-summary { grid-template-columns: 1fr 1fr; } .warfront-march-button { grid-column: 1 / -1; } }
 
 /* ── 历练：演武/秘境/远征/修士合并入口，内部子页签切换 ── */
 .practice-tabs { display: flex; gap: 6px; margin-bottom: 12px; }
@@ -1521,4 +1626,137 @@ button {
 
 @media (prefers-reduced-motion: reduce) {
   .seek-orb, .seek-orb-aura, .seek-orb-rune, .seek-drop-reveal, .seek-drop-reveal::before, .seek-drop-sparks i, .character-select-mask, .character-select { animation: none; }
+}
+
+.practice-overview { margin-bottom: 11px; padding: 10px; border: 1px solid rgba(68,184,171,.34); border-radius: 9px; background: linear-gradient(145deg, rgba(20,48,55,.94), rgba(16,27,38,.96)); box-shadow: 0 8px 18px rgba(0,0,0,.18); }
+.practice-overview-head { display: flex; align-items: flex-start; justify-content: space-between; gap: 8px; }
+.practice-overview-head > div { min-width: 0; }
+.practice-overview-head b, .practice-overview-head span { display: block; }
+.practice-overview-head b { color: var(--gold); font-size: 14px; letter-spacing: .7px; }
+.practice-overview-head span { margin-top: 3px; color: var(--text-dim); font-size: 9px; line-height: 1.5; }
+.practice-overview-badge { flex: 0 0 auto; padding: 3px 5px; border: 1px solid rgba(216,177,104,.34); border-radius: 3px; color: var(--gold-dim) !important; font-size: 8px !important; white-space: nowrap; }
+.practice-loop { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 5px; margin-top: 10px; }
+.practice-loop-item-wrap { position: relative; min-width: 0; }
+.practice-loop-item { display: flex; flex-direction: column; align-items: flex-start; width: 100%; min-height: 58px; padding: 6px 5px; border: 1px solid rgba(255,255,255,.1); border-radius: 6px; background: rgba(5,12,18,.36); color: var(--text-dim); text-align: left; transition: border-color .16s, background .16s, transform .16s; }
+.practice-loop-item:hover, .practice-loop-item.active { border-color: rgba(216,177,104,.72); background: rgba(91,70,34,.28); color: var(--text); transform: translateY(-1px); }
+.practice-loop-item i { display: grid; place-items: center; width: 21px; height: 21px; border: 1px solid currentColor; border-radius: 50%; color: var(--gold); font-size: 11px; font-style: normal; }
+.practice-loop-item b { margin-top: 4px; color: inherit; font-size: 10px; font-weight: 600; }
+.practice-loop-item small { width: 100%; margin-top: 2px; overflow: hidden; color: var(--text-dim); font-size: 8px; text-overflow: ellipsis; white-space: nowrap; }
+.practice-loop-arrow { position: absolute; z-index: 2; right: -7px; top: 25px; color: var(--gold-dim); font-size: 16px; line-height: 1; pointer-events: none; }
+.practice-current { margin-top: 8px; padding: 7px 8px; border-left: 2px solid var(--teal); background: rgba(68,184,171,.075); }
+.practice-current.stage, .practice-purpose.stage { border-left-color: var(--gold); }
+.practice-current.expedition, .practice-purpose.expedition { border-left-color: #b79a5f; }
+.practice-current.cultivator, .practice-purpose.cultivator { border-left-color: #c687cf; }
+.practice-current-title { display: flex; align-items: center; gap: 5px; }
+.practice-current-title span { color: var(--gold); font-size: 12px; }
+.practice-current-title b { color: var(--text); font-size: 11px; }
+.practice-current-title em { padding: 2px 4px; border: 1px solid rgba(216,177,104,.3); border-radius: 3px; color: var(--gold-dim); font-size: 8px; font-style: normal; }
+.practice-current p, .practice-purpose p { margin: 4px 0 0; color: var(--text-dim); font-size: 9px; line-height: 1.55; }
+.practice-current-meta { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px; margin-top: 6px; }
+.practice-current-meta span { min-width: 0; color: var(--text-dim); font-size: 8px; line-height: 1.45; }
+.practice-current-meta b { display: block; margin-bottom: 1px; color: var(--teal); font-size: 8px; font-weight: 500; }
+.practice-routine { margin-top: 7px; border-top: 1px solid rgba(255,255,255,.08); }
+.practice-routine summary { padding-top: 7px; color: var(--gold-dim); font-size: 9px; cursor: pointer; list-style: none; }
+.practice-routine summary::-webkit-details-marker { display: none; }
+.practice-routine summary::before { content: '▸'; margin-right: 5px; color: var(--gold); }
+.practice-routine[open] summary::before { content: '▾'; }
+.practice-routine-rows { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 5px; margin-top: 6px; }
+.practice-routine-rows > div { padding: 6px; border: 1px solid rgba(255,255,255,.08); border-radius: 4px; background: rgba(255,255,255,.025); }
+.practice-routine-rows b, .practice-routine-rows span { display: block; }
+.practice-routine-rows b { color: var(--text); font-size: 9px; font-weight: 500; }
+.practice-routine-rows span { margin-top: 3px; color: var(--text-dim); font-size: 8px; line-height: 1.45; }
+.practice-purpose { margin: 0 0 10px; padding: 8px 9px; border: 1px solid rgba(255,255,255,.1); border-left: 2px solid var(--teal); border-radius: 6px; background: rgba(255,255,255,.035); }
+.practice-purpose-heading { display: flex; align-items: center; gap: 7px; }
+.practice-purpose-heading > span { display: grid; place-items: center; width: 25px; height: 25px; border: 1px solid rgba(216,177,104,.42); border-radius: 50%; color: var(--gold); font-size: 13px; }
+.practice-purpose-heading > div { min-width: 0; }
+.practice-purpose-heading b, .practice-purpose-heading small { display: block; }
+.practice-purpose-heading b { color: var(--text); font-size: 11px; font-weight: 600; }
+.practice-purpose-heading small { margin-top: 2px; color: var(--gold-dim); font-size: 8px; }
+.practice-purpose-rules { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 6px; }
+.practice-purpose-rules span { padding: 3px 5px; border: 1px solid rgba(255,255,255,.09); border-radius: 3px; color: var(--text-dim); background: rgba(0,0,0,.12); font-size: 8px; }
+.practice-purpose-tip { margin-top: 7px; padding: 6px 7px; border-left: 2px solid rgba(216,177,104,.45); background: rgba(216,177,104,.07); color: var(--gold-dim); font-size: 8px; line-height: 1.5; }
+
+.practice-battle-scene { margin: 8px 0 10px; padding: 9px; border: 1px solid rgba(216,177,104,.42); border-radius: 9px; background: radial-gradient(circle at 50% 42%, rgba(54,82,87,.94), rgba(16,28,39,.98) 64%); box-shadow: inset 0 0 28px rgba(68,184,171,.08), 0 9px 20px rgba(0,0,0,.24); overflow: hidden; }
+.practice-battle-topline { display: flex; align-items: center; justify-content: space-between; gap: 7px; min-height: 22px; color: var(--text-dim); font-size: 9px; }
+.practice-battle-topline b { color: var(--gold); font-size: 10px; }
+.practice-battle-tools { display: flex; align-items: center; gap: 7px; color: var(--gold-dim); white-space: nowrap; }
+.practice-battle-summary { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 5px; margin: 6px 0; padding: 5px 6px; border: 1px solid rgba(255,255,255,.08); border-radius: 4px; background: rgba(0,0,0,.16); color: var(--text-dim); font-size: 8px; text-align: center; }
+.practice-battle-summary span:first-child { text-align: left; }
+.practice-battle-summary span:last-child { text-align: right; }
+.practice-battle-summary b { color: var(--text); font-size: 10px; font-variant-numeric: tabular-nums; }
+.practice-battle-summary .advantage { color: var(--teal); }
+.practice-battle-summary .danger { color: var(--danger); }
+.practice-battle-field { position: relative; display: grid; grid-template-columns: minmax(0, 1fr) 102px minmax(0, 1fr); align-items: center; min-height: 212px; border-top: 1px solid rgba(255,255,255,.08); border-bottom: 1px solid rgba(255,255,255,.08); overflow: hidden; }
+.practice-battle-field::before { content: ''; position: absolute; left: 5%; right: 5%; top: 56%; border-top: 1px dashed rgba(216,177,104,.35); box-shadow: 0 0 14px rgba(216,177,104,.18); }
+.practice-battle-stars { position: absolute; inset: 0; opacity: .5; background: radial-gradient(circle at 18% 25%, rgba(255,255,255,.8) 0 1px, transparent 1.5px), radial-gradient(circle at 74% 22%, rgba(79,209,197,.65) 0 1px, transparent 1.5px), radial-gradient(circle at 56% 79%, rgba(216,177,104,.65) 0 1px, transparent 1.5px), radial-gradient(circle at 90% 62%, rgba(255,255,255,.55) 0 1px, transparent 1.5px); animation: practice-stars-drift 6s linear infinite; pointer-events: none; }
+.practice-battle-combatant { position: relative; z-index: 1; display: flex; flex-direction: column; align-items: center; min-width: 0; transition: filter .2s; }
+.practice-battle-combatant.player { color: var(--teal); }
+.practice-battle-combatant.rival { color: var(--danger); }
+.practice-battle-combatant.active.player { animation: practice-charge-player .58s cubic-bezier(.2,.8,.25,1); }
+.practice-battle-combatant.active.rival { animation: practice-charge-rival .58s cubic-bezier(.2,.8,.25,1); }
+.practice-battle-combatant.hit { animation: practice-hit .4s ease-out; filter: brightness(1.75) saturate(.45); }
+.practice-battle-combatant.rival.hit { animation-name: practice-hit-rival; }
+.practice-battle-combatant.defeated { filter: grayscale(.9) brightness(.5); opacity: .7; }
+.practice-battle-name, .practice-battle-count { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.practice-battle-name { color: var(--text); font-size: 9px; }
+.practice-battle-count { color: var(--text-dim); font-size: 8px; }
+.practice-battle-unit-wrap { position: relative; display: grid; place-items: center; width: 88px; height: 88px; margin: 3px 0 1px; }
+.practice-battle-unit { width: 78px; height: 78px; object-fit: contain; filter: drop-shadow(0 5px 6px rgba(0,0,0,.58)); animation: practice-unit-float 2.4s ease-in-out infinite; }
+.practice-battle-combatant.active .practice-battle-unit { animation: practice-unit-flare .58s ease-out; }
+.practice-battle-ring { position: absolute; inset: 8px; border: 1px solid currentColor; border-radius: 50%; opacity: .8; animation: practice-ring-pulse .58s ease-out; pointer-events: none; }
+.practice-battle-hp-label { display: flex; justify-content: space-between; width: min(95%, 98px); margin-top: 4px; color: var(--text-dim); font-size: 7px; }
+.practice-battle-hp-label b { color: currentColor; font-size: 8px; }
+.practice-battle-hp { width: min(95%, 98px); height: 6px; margin-top: 2px; border: 1px solid rgba(255,255,255,.18); background: rgba(0,0,0,.48); overflow: hidden; }
+.practice-battle-hp i { display: block; height: 100%; background: linear-gradient(90deg, var(--teal), #c7fff4); transition: width .55s cubic-bezier(.2,.85,.25,1); }
+.practice-battle-combatant.rival .practice-battle-hp i { background: linear-gradient(90deg, var(--danger), #ffd5cf); }
+.practice-battle-center { position: relative; z-index: 2; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+.practice-battle-rune { display: grid; place-items: center; width: 39px; height: 39px; border: 1px solid rgba(216,177,104,.85); border-radius: 50%; color: var(--gold); background: rgba(12,24,32,.94); box-shadow: 0 0 20px rgba(216,177,104,.3), inset 0 0 10px rgba(216,177,104,.12); animation: practice-rune-spin 4s linear infinite; }
+.practice-battle-impact { min-height: 14px; color: var(--gold); font-size: 9px; font-weight: 700; letter-spacing: .3px; text-shadow: 0 0 9px currentColor; animation: practice-impact-pop .42s cubic-bezier(.2,1.4,.4,1); white-space: nowrap; }
+.practice-battle-impact.player { color: var(--teal); }
+.practice-battle-impact.rival { color: var(--danger); }
+.practice-battle-text { width: 96px; min-height: 38px; color: var(--text-dim); font-size: 8px; line-height: 1.5; text-align: center; }
+.practice-battle-strike { position: absolute; z-index: 3; top: 54%; width: 43%; height: 4px; pointer-events: none; animation: practice-strike .46s ease-out forwards; }
+.practice-battle-strike.player { left: 21%; transform-origin: left center; background: linear-gradient(90deg, rgba(68,184,171,0), var(--teal), rgba(255,255,255,.98)); box-shadow: 0 0 14px var(--teal); transform: rotate(-8deg); }
+.practice-battle-strike.rival { right: 21%; transform-origin: right center; background: linear-gradient(90deg, rgba(255,255,255,.98), var(--danger), rgba(217,112,112,0)); box-shadow: 0 0 14px var(--danger); transform: rotate(8deg); }
+.practice-battle-caption { min-height: 16px; padding-top: 6px; color: var(--text-dim); font-size: 8px; text-align: center; }
+.practice-battle-caption.done { color: var(--gold); }
+.stage-result-card { margin-top: 8px; padding: 11px 9px; border: 1px solid rgba(111,191,115,.35); border-radius: 7px; background: rgba(26,57,43,.34); text-align: center; animation: result-pop .4s cubic-bezier(.2,1.5,.4,1); }
+.stage-result-card.lose { border-color: rgba(217,112,112,.35); background: rgba(71,31,35,.3); }
+.stage-result-title { color: var(--ok); font-size: 14px; font-weight: 700; }
+.stage-result-card.lose .stage-result-title { color: var(--danger); }
+.stage-result-card p { margin: 5px 0; color: var(--text-dim); font-size: 9px; line-height: 1.55; }
+.stage-result-cost { margin: 5px 0 8px; color: var(--gold-dim); font-size: 9px; }
+.stage-result-cost b { color: var(--danger); }
+.stage-result-card .btn-main { margin-top: 2px; }
+.expedition-mode-note { margin-top: 3px; color: var(--teal); font-size: 8px; line-height: 1.4; }
+.expedition-node-explain { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 5px; margin: 8px 0; padding: 6px 7px; border-left: 2px solid var(--gold); background: rgba(216,177,104,.065); color: var(--text-dim); font-size: 8px; line-height: 1.45; }
+.expedition-node-explain b { color: var(--gold-dim); font-weight: 500; white-space: nowrap; }
+.expedition-progress-note { color: var(--ok) !important; }
+@keyframes practice-stars-drift { 50% { transform: translateY(-4px); opacity: .75; } }
+@keyframes practice-unit-float { 0%,100% { transform: translateY(0) rotate(-1deg); } 50% { transform: translateY(-4px) rotate(1deg); } }
+@keyframes practice-unit-flare { 0% { filter: brightness(1); } 45% { filter: brightness(1.9) drop-shadow(0 0 14px currentColor); } 100% { filter: brightness(1); } }
+@keyframes practice-ring-pulse { 0% { transform: scale(.62); opacity: 0; } 45% { opacity: .95; } 100% { transform: scale(1.28); opacity: 0; } }
+@keyframes practice-rune-spin { to { transform: rotate(360deg); } }
+@keyframes practice-impact-pop { from { opacity: 0; transform: translateY(5px) scale(.65); } to { opacity: 1; transform: none; } }
+@keyframes practice-strike { 0% { opacity: 0; transform-origin: left center; scale: .1 1; } 35% { opacity: 1; scale: 1 1; } 100% { opacity: 0; scale: .75 1; } }
+@keyframes practice-charge-player { 0%,100% { transform: translateX(0); } 52% { transform: translateX(23px) scale(1.08); } }
+@keyframes practice-charge-rival { 0%,100% { transform: translateX(0); } 52% { transform: translateX(-23px) scale(1.08); } }
+@keyframes practice-hit { 0%,100% { transform: translateX(0); } 30% { transform: translateX(-8px); } 62% { transform: translateX(5px); } }
+@keyframes practice-hit-rival { 0%,100% { transform: translateX(0); } 30% { transform: translateX(8px); } 62% { transform: translateX(-5px); } }
+@media (max-width: 360px) {
+  .practice-overview { padding: 8px; }
+  .practice-loop { gap: 3px; }
+  .practice-loop-item { min-height: 54px; padding-left: 3px; padding-right: 3px; }
+  .practice-loop-item b { font-size: 9px; }
+  .practice-loop-item small { font-size: 7px; }
+  .practice-loop-arrow { right: -6px; }
+  .practice-current-meta, .practice-routine-rows { grid-template-columns: 1fr; }
+  .practice-battle-field { grid-template-columns: minmax(0, 1fr) 82px minmax(0, 1fr); min-height: 196px; }
+  .practice-battle-unit-wrap { width: 70px; height: 70px; }
+  .practice-battle-unit { width: 64px; height: 64px; }
+  .practice-battle-text { width: 77px; font-size: 7px; }
+  .practice-battle-summary { font-size: 7px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .practice-loop-item, .practice-battle-stars, .practice-battle-unit, .practice-battle-rune, .practice-battle-impact, .practice-battle-strike, .practice-battle-combatant, .practice-battle-ring, .stage-result-card { animation: none; }
 }

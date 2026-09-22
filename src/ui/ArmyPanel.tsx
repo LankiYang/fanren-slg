@@ -6,6 +6,7 @@ import {
 } from '../game/store'
 import { Cost } from './Sheet'
 import { sprite, fmt } from './util'
+import { PracticePurpose } from './PracticeGuide'
 
 /** 演武场：练兵 */
 export function TroopList() {
@@ -24,6 +25,7 @@ export function TroopList() {
 
   return (
     <div>
+      <PracticePurpose section="army" />
       <div className="section-title">
         总战力 {fmt(totalPower(s))}
         {yanwuLv === 0
@@ -75,6 +77,7 @@ export function TroopList() {
             <div className="card-side">
               <button
                 className="btn-sub"
+                data-tut={t.key === 'kuilei' ? 'train-troop' : undefined}
                 disabled={yanwuLv === 0 || n <= 0}
                 onClick={() => {
                   const r = trainTroop(t.key, n)
@@ -116,6 +119,9 @@ export function CultivatorList() {
 
   return (
     <div>
+      <PracticePurpose section="cultivator">
+        <div className="practice-purpose-tip">培养建议：先选一套主力兵种，不要把资源平均分散；对应修士的等级会同时影响秘境、远征和战区。</div>
+      </PracticePurpose>
       <div className="section-title">修士 · 提升对应兵种战力</div>
       {CULTIVATORS.map(c => {
         const st = s.cultivators[c.key]
@@ -137,10 +143,10 @@ export function CultivatorList() {
                 <br />
                 {owned ? (
                   <>
-                    {st.level}/{CULTIVATOR_MAX_LEVEL} 级 · 专精 {TROOP_MAP[c.spec].name} 战力
+                    {st.level}/{CULTIVATOR_MAX_LEVEL} 级 · 专精 {TROOP_MAP[c.spec].name} · 生效于秘境/远征/战区
                     {' +'}{(cultivatorBonus(c, st.level) * 100).toFixed(0)}%
                   </>
-                ) : '尚未招募 · 通关对应秘境可得'}
+                ) : `尚未招募 · 通关对应秘境首领关可得 · 解锁后提升 ${TROOP_MAP[c.spec].name} 战力`}
               </div>
               {owned && !maxed && <Cost cost={cost} have={s.resources} />}
             </div>
@@ -148,6 +154,7 @@ export function CultivatorList() {
               {owned && (
                 <button
                   className="btn-sub"
+                  data-tut={c.key === 'hanli' ? 'cultivator-level' : undefined}
                   disabled={maxed}
                   onClick={() => {
                     const r = levelUp(c.key)
