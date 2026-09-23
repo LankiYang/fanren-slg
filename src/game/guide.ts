@@ -1,5 +1,6 @@
 import type { BuildingKey, GameState } from './types'
 import { QUESTS, type Quest } from './quests'
+import type { GameDerivedSnapshot } from '../online/contracts'
 
 export type GuideChapterId = 'foundation' | 'battle' | 'growth' | 'sect' | 'warfront' | 'endgame'
 export type PracticeSection = 'army' | 'stage' | 'expedition' | 'cultivator'
@@ -93,29 +94,29 @@ export function guideQuest(id: string): Quest | undefined {
   return QUESTS.find(quest => quest.id === id)
 }
 
-export function chapterProgress(chapter: GuideChapter, state: GameState): { done: number; claimed: number; total: number } {
+export function chapterProgress(chapter: GuideChapter, state: GameState, derived?: GameDerivedSnapshot): { done: number; claimed: number; total: number } {
   const quests = chapter.questIds.map(guideQuest).filter((quest): quest is Quest => !!quest)
   return {
-    done: quests.filter(quest => quest.done(state)).length,
-    claimed: quests.filter(quest => state.claimedQuests.includes(quest.id)).length,
+    done: quests.filter(quest => derived?.questDetails[quest.id]?.done ?? quest.done(state)).length,
+    claimed: quests.filter(quest => derived?.questDetails[quest.id]?.claimed ?? state.claimedQuests.includes(quest.id)).length,
     total: quests.length,
   }
 }
 
-export function isChapterComplete(chapter: GuideChapter, state: GameState): boolean {
-  const progress = chapterProgress(chapter, state)
+export function isChapterComplete(chapter: GuideChapter, state: GameState, derived?: GameDerivedSnapshot): boolean {
+  const progress = chapterProgress(chapter, state, derived)
   return progress.total > 0 && progress.claimed >= progress.total
 }
 
-export function currentGuide(state: GameState, now = Date.now()): {
+export function currentGuide(state: GameState, now = Date.now(), derived?: GameDerivedSnapshot): {
   chapter: GuideChapter
   objective: Quest | null
   progress: { done: number; claimed: number; total: number }
   day: number
 } {
-  const chapter = GUIDE_CHAPTERS.find(item => !isChapterComplete(item, state)) ?? GUIDE_CHAPTERS[GUIDE_CHAPTERS.length - 1]
+  const chapter = GUIDE_CHAPTERS.find(item => !isChapterComplete(item, state, derived)) ?? GUIDE_CHAPTERS[GUIDE_CHAPTERS.length - 1]
   const objective = chapter.questIds
     .map(guideQuest)
-    .find((quest): quest is Quest => !!quest && !state.claimedQuests.includes(quest.id)) ?? null
-  return { chapter, objective, progress: chapterProgress(chapter, state), day: journeyDay(state.journeyStartedAt, now) }
+    .find((quest): quest is Quest => !!quest && !(derived?.questDetails[quest.id]?.claimed ?? state.claimedQuests.includes(quest.id))) ?? null
+  return { chapter, objective, progress: chapterProgress(chapter, state, derived), day: journeyDay(state.journeyStartedAt, now) }
 }

@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import {
-  GONGFA, GONGFA_BRANCHES, GONGFA_MAP, gongfaCost, gongfaTimeMs,
-  PILLS, PILL_MAP, pillCost,
-  ARTIFACTS, artifactCost, artifactBonus,
+  GONGFA, GONGFA_BRANCHES, GONGFA_MAP,
+  PILLS, PILL_MAP,
+  ARTIFACTS,
   type GongfaBranch, type PillKey,
 } from '../game/systems'
 import { RESOURCE_META, TROOP_MAP } from '../game/data'
@@ -21,7 +21,6 @@ export function GongfaPanel({ now }: { now: number }) {
   const [hint, setHint] = useState('')
   const [branch, setBranch] = useState<GongfaBranch>('gather')
 
-  const cangjing = s.buildings.cangjing.level
   const busy = s.gongfaResearching
 
   useEffect(() => { maybeStartIntro('cangjing') }, [maybeStartIntro])
@@ -59,10 +58,11 @@ export function GongfaPanel({ now }: { now: number }) {
       </div>
 
       {GONGFA.filter(g => g.branch === branch).map(g => {
-        const lv = s.gongfa[g.key] ?? 0
-        const maxed = lv >= g.maxLevel
-        const locked = cangjing < g.requires
-        const cost = gongfaCost(lv + 1)
+        const detail = s.derived.gongfaDetails[g.key]
+        const lv = detail?.level ?? s.gongfa[g.key] ?? 0
+        const maxed = detail ? detail.level >= detail.maxLevel : lv >= g.maxLevel
+        const locked = detail?.locked ?? true
+        const cost = detail?.cost ?? {}
         return (
           <div className={'card' + (locked ? ' locked-card' : '')} key={g.key}>
             <img className="thumb" src={sprite('item/scroll.webp')} alt="" />
@@ -72,15 +72,15 @@ export function GongfaPanel({ now }: { now: number }) {
               </div>
               <div className="card-meta">
                 {g.desc} <span style={{ color: GONGFA_BRANCHES[branch].color }}>
-                  +{(lv * g.perLevel * 100).toFixed(0)}%
+                  +{(detail?.currentPercent ?? 0).toFixed(0)}%
                 </span>
-                {!maxed && <> → +{((lv + 1) * g.perLevel * 100).toFixed(0)}%</>}
+                {!maxed && <> → +{(detail?.nextPercent ?? 0).toFixed(0)}%</>}
                 {locked && <><br /><span style={{ color: 'var(--danger)' }}>需藏经阁 {g.requires} 级</span></>}
               </div>
               {!maxed && !locked && (
                 <>
                   <Cost cost={cost} have={s.resources} />
-                  <div className="card-meta">耗时 {fmtTime(gongfaTimeMs(lv + 1))}</div>
+                  <div className="card-meta">耗时 {fmtTime(detail?.timeMs ?? 0)}</div>
                 </>
               )}
             </div>
@@ -89,8 +89,8 @@ export function GongfaPanel({ now }: { now: number }) {
                 className="btn-sub"
                 data-tut={g.key === 'g_output' ? 'gongfa-research' : undefined}
                 disabled={maxed || locked || !!busy}
-                onClick={() => {
-                  const r = research(g.key)
+                onClick={async () => {
+                  const r = await research(g.key)
                   setHint(r.ok ? `开始参研《${g.name}》` : (r.reason ?? ''))
                 }}
               >
@@ -116,9 +116,8 @@ export function PillPanel({ now }: { now: number }) {
   const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [hint, setHint] = useState('')
 
-  const liandan = s.buildings.liandan.level
   const crafting = s.pillCrafting
-  const cost = pillCost(Math.max(1, liandan))
+  const cost = s.derived.pillDetails.qi?.cost ?? {}
 
   useEffect(() => { maybeStartIntro('liandan') }, [maybeStartIntro])
 
@@ -137,7 +136,7 @@ export function PillPanel({ now }: { now: number }) {
             </div>
             <div className="card-side">
               <button className="btn-sub" style={{ borderColor: 'var(--ok)', color: 'var(--ok)' }}
-                onClick={() => { collect(); setHint('已收取丹药') }}>
+                onClick={async () => { const result = await collect(); setHint(result.ok ? '已收取丹药' : result.reason ?? '') }}>
                 收取
               </button>
             </div>
@@ -156,9 +155,10 @@ export function PillPanel({ now }: { now: number }) {
       )}
 
       {PILLS.map(p => {
-        const owned = s.pills[p.key] ?? 0
-        const activeUntil = s.pillActive[p.key] ?? 0
-        const active = now < activeUntil
+        const detail = s.derived.pillDetails[p.key]
+        const owned = detail?.owned ?? s.pills[p.key] ?? 0
+        const activeUntil = detail?.activeUntil ?? s.pillActive[p.key] ?? 0
+        const active = detail?.active ?? now < activeUntil
         return (
           <div className="card" key={p.key}>
             <img className="thumb" src={sprite(p.sprite)} alt={p.name} />
@@ -168,7 +168,7 @@ export function PillPanel({ now }: { now: number }) {
                 <span style={{ color: 'var(--text-dim)', fontSize: 11 }}> ×{owned}</span>
                 {active && (
                   <span style={{ color: 'var(--ok)', fontSize: 11 }}>
-                    {' '}· 生效中 {fmtTime(activeUntil - now)}
+                    {' '}· 生效中 {fmtTime(detail?.remainingMs ?? Math.max(0, activeUntil - now))}
                   </span>
                 )}
               </div>
@@ -181,9 +181,9 @@ export function PillPanel({ now }: { now: number }) {
             <div className="card-side" style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
               <button
                 className="btn-sub"
-                disabled={liandan <= 0 || !!crafting}
-                onClick={() => {
-                  const r = craft(p.key)
+                disabled={s.buildings.liandan.level <= 0 || !!crafting}
+                onClick={async () => {
+                  const r = await craft(p.key)
                   setHint(r.ok ? `开始炼制${p.name}` : (r.reason ?? ''))
                 }}
               >
@@ -193,8 +193,8 @@ export function PillPanel({ now }: { now: number }) {
                 className="btn-sub"
                 disabled={owned <= 0}
                 style={owned > 0 ? { borderColor: 'var(--ok)', color: 'var(--ok)' } : undefined}
-                onClick={() => {
-                  const r = use(p.key)
+                onClick={async () => {
+                  const r = await use(p.key)
                   setHint(r.ok ? `已服下${p.name}` : (r.reason ?? ''))
                 }}
               >
@@ -223,17 +223,16 @@ export function ArtifactPanel() {
 
   useEffect(() => { maybeStartIntro('lianqi') }, [maybeStartIntro])
 
-  const lianqi = s.buildings.lianqi.level
-
   return (
     <div>
       <div className="section-title">法宝锻造 · 兵种战力加成</div>
 
       {ARTIFACTS.map(a => {
-        const lv = s.artifacts[a.key] ?? 0
-        const maxed = lv >= a.maxLevel
-        const locked = lianqi < a.requires
-        const cost = artifactCost(lv + 1)
+        const detail = s.derived.artifactDetails[a.key]
+        const lv = detail?.level ?? s.artifacts[a.key] ?? 0
+        const maxed = detail ? detail.level >= detail.maxLevel : lv >= a.maxLevel
+        const locked = detail?.locked ?? true
+        const cost = detail?.cost ?? {}
         return (
           <div className={'card' + (locked ? ' locked-card' : '')} key={a.key}>
             <img className="thumb" src={sprite(a.sprite)} alt={a.name} />
@@ -245,8 +244,8 @@ export function ArtifactPanel() {
                 </span>
               </div>
               <div className="card-meta">
-                {a.desc} <span style={{ color: 'var(--gold)' }}>+{(lv * a.perLevel * 100).toFixed(0)}%</span>
-                {!maxed && <> → +{((lv + 1) * a.perLevel * 100).toFixed(0)}%</>}
+                {a.desc} <span style={{ color: 'var(--gold)' }}>+{(detail?.currentPercent ?? 0).toFixed(0)}%</span>
+                {!maxed && <> → +{(detail?.nextPercent ?? 0).toFixed(0)}%</>}
                 {locked && <><br /><span style={{ color: 'var(--danger)' }}>需炼器阁 {a.requires} 级</span></>}
               </div>
               {!maxed && !locked && <Cost cost={cost} have={s.resources} />}
@@ -256,9 +255,9 @@ export function ArtifactPanel() {
                 className="btn-sub"
                 data-tut={a.key === 'sword' ? 'artifact-forge' : undefined}
                 disabled={maxed || locked}
-                onClick={() => {
-                  const r = forge(a.key)
-                  setHint(r.ok ? `${a.name} 已提升至 ${lv + 1} 阶` : (r.reason ?? ''))
+                onClick={async () => {
+                  const r = await forge(a.key)
+                  setHint(r.ok ? `${a.name} 已提升至 ${typeof r.level === 'number' ? r.level : '新阶'}` : (r.reason ?? ''))
                 }}
               >
                 {maxed ? '圆满' : lv > 0 ? '升阶' : '锻造'}
@@ -274,7 +273,7 @@ export function ArtifactPanel() {
           <div className="card-meta" style={{ lineHeight: 1.9 }}>
             {(['kuilei', 'yushou', 'fuxiu'] as const).map(t => (
               <div key={t}>
-                {TROOP_MAP[t].name} +{(artifactBonus(s, t) * 100).toFixed(0)}%
+                {TROOP_MAP[t].name} +{(s.derived.artifactBonusPercent[t] ?? 0).toFixed(0)}%
               </div>
             ))}
           </div>

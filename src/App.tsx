@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { REALMS, RESOURCE_META } from './game/data'
+import { RESOURCE_META } from './game/data'
 import type { BuildingKey, ResourceKey } from './game/types'
 import { useGame } from './game/store'
 import { TopBar } from './ui/TopBar'
@@ -19,11 +19,15 @@ import type { PracticeSection } from './game/guide'
 import { sprite, fmt } from './ui/util'
 import { CharacterSelect } from './ui/CharacterSelect'
 import { SeekPanel } from './ui/SeekPanel'
-import { cultivationRequirement } from './game/seek'
+import { AccountGate } from './ui/AccountGate'
+import { getSessionToken } from './online/api'
+import { useOnline } from './online/onlineStore'
 
 type Tab = 'home' | 'practice' | 'warfront' | 'sect'
 
 export default function App() {
+  const connect = useGame(x => x.connect)
+  const onlineStatus = useOnline(x => x.status)
   const tick = useGame(x => x.tick)
   const refreshExpedition = useGame(x => x.refreshExpedition)
   const breakthrough = useGame(x => x.breakthrough)
@@ -64,11 +68,12 @@ export default function App() {
 
   // 主循环：每 500ms 结算一次产出与升级完成
   useEffect(() => {
-    tick()
-    refreshExpedition()
-    const id = setInterval(() => { tick(); refreshExpedition(); setNow(Date.now()) }, 500)
+    if (getSessionToken()) void connect()
+    const id = setInterval(() => { void tick(); void refreshExpedition(); setNow(Date.now()) }, 1000)
     return () => clearInterval(id)
-  }, [refreshExpedition, tick])
+  }, [connect, refreshExpedition, tick])
+
+  if (!getSessionToken() && onlineStatus !== 'online') return <AccountGate />
 
   return (
     <div className="app">
@@ -153,17 +158,17 @@ export default function App() {
 
 function BreakthroughSheet({ onClose, onDo, onSuccess }: {
   onClose: () => void
-  onDo: () => { ok: boolean; reason?: string }
+  onDo: () => Promise<{ ok: boolean; reason?: string }>
   onSuccess: (realmName: string) => void
 }) {
   const s = useGame()
   const [hint, setHint] = useState('')
-  const cur = REALMS[Math.min(s.realm, REALMS.length - 1)]
-  const next = REALMS[s.realm + 1]
-  const insightNeed = cultivationRequirement(s.realm)
+  const realm = s.derived.realm
+  const next = realm.next
+  const insightNeed = realm.cultivationNeed
 
   return (
-    <Sheet title="境界突破" sub={cur.name} onClose={onClose}>
+    <Sheet title="境界突破" sub={realm.currentName} onClose={onClose}>
       {!next ? (
         <div className="sheet-desc">已抵达当前版本的最高境界。</div>
       ) : (
@@ -171,15 +176,15 @@ function BreakthroughSheet({ onClose, onDo, onSuccess }: {
           <div className="sheet-desc">
             突破至 <b style={{ color: 'var(--gold)' }}>{next.name}</b>
             <br />
-            全局产出 ×{cur.outputBonus.toFixed(2)} → ×{next.outputBonus.toFixed(2)}
+            全局产出 ×{realm.currentOutputBonus.toFixed(2)} → ×{next.outputBonus.toFixed(2)}
             <br />
-            全军战力 ×{cur.powerBonus.toFixed(2)} → ×{next.powerBonus.toFixed(2)}
+            全军战力 ×{realm.currentPowerBonus.toFixed(2)} → ×{next.powerBonus.toFixed(2)}
           </div>
 
           <div className="section-title">
             前置：洞府 {next.requiresDongfu} 级
             <span style={{
-              color: s.buildings.dongfu.level >= next.requiresDongfu ? 'var(--ok)' : 'var(--danger)',
+              color: realm.dongfuReady ? 'var(--ok)' : 'var(--danger)',
             }}>
               （当前 {s.buildings.dongfu.level}）
             </span>
@@ -189,15 +194,15 @@ function BreakthroughSheet({ onClose, onDo, onSuccess }: {
           <Cost cost={next.cost} have={s.resources} />
           <div className="breakthrough-insight">
             <span>寻道修为</span>
-            <b className={s.seek.cultivation >= insightNeed ? 'ok' : 'lack'}>
-              {fmt(s.seek.cultivation)} / {fmt(insightNeed)}
+            <b className={realm.cultivationReady ? 'ok' : 'lack'}>
+              {fmt(realm.cultivation)} / {fmt(insightNeed)}
             </b>
           </div>
 
           <button
             className="btn-main"
-            onClick={() => {
-              const r = onDo()
+            onClick={async () => {
+              const r = await onDo()
               if (r.ok) { onSuccess(next.name); onClose() }
               else setHint(r.reason ?? '无法突破')
             }}

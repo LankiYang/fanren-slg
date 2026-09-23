@@ -1,30 +1,28 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useState } from 'react'
 import { RESOURCE_META, TROOPS, TROOP_MAP } from '../game/data'
-import { battlePowerFromBattleProfile, battleProfileFromGameState } from '../game/compute'
 import type { ResourceKey, TroopKey, WarfrontTactic } from '../game/types'
 import { useGame } from '../game/store'
 import { WARFRONT_NODE_MAP, WARFRONT_NODES, WARFRONT_TACTICS } from '../game/warfront'
-import type { OnlineNodeState } from '../online/contracts'
+import type { OnlineNodeState, WarfrontPreview } from '../online/contracts'
 import { useOnline } from '../online/onlineStore'
 import { WarfrontBattleScene } from './WarfrontBattleScene'
 import { FriendPanel } from './FriendPanel'
+import { ChatPanel } from './ChatPanel'
 import { WarfrontMap } from './WarfrontMap'
 import { Sheet } from './Sheet'
 import { fmt, fmtTime, sprite } from './util'
+import { clearSessionToken } from '../online/api'
 
-const MARCH_CAP = 180
 const EMPTY_FORMATION: Record<TroopKey, number> = { kuilei: 0, yushou: 0, fuxiu: 0 }
 
 export function WarfrontPanel({ now }: { now: number }) {
   const online = useOnline()
-  const game = useGame()
-  const syncIncome = useGame(x => x.syncOnlineWarfrontIncome)
-  const claimReward = useGame(x => x.claimOnlineWarfrontReward)
   const markGuideFlag = useGame(x => x.markGuideFlag)
   const maybeStartIntro = useGame(x => x.maybeStartIntro)
   const [selectedKey, setSelectedKey] = useState(WARFRONT_NODES[0].key)
   const [tactic, setTactic] = useState<WarfrontTactic>('raid')
   const [formation, setFormation] = useState<Record<TroopKey, number>>(EMPTY_FORMATION)
+  const [preview, setPreview] = useState<WarfrontPreview | null>(null)
   const [working, setWorking] = useState(false)
   const [sectName, setSectName] = useState('')
   const [garrisonDraft, setGarrisonDraft] = useState<Record<TroopKey, number>>(EMPTY_FORMATION)
@@ -33,20 +31,13 @@ export function WarfrontPanel({ now }: { now: number }) {
   const [commandCollapsed, setCommandCollapsed] = useState(true)
   const [showRename, setShowRename] = useState(false)
   const [nameDraft, setNameDraft] = useState('')
-  const localBattleProfile = useMemo(() => battleProfileFromGameState(game, now), [game, now])
-  const profileSignature = JSON.stringify(localBattleProfile)
+  const [showAccount, setShowAccount] = useState(false)
 
   useEffect(() => {
     void online.connect()
     const id = window.setInterval(() => void useOnline.getState().refresh(true), 900)
     return () => window.clearInterval(id)
   }, [])
-
-  // 战区只保存服务器确认后的成长镜像；本地任意养成变化会在下次打开战区时同步。
-  useEffect(() => {
-    if (online.status !== 'online' || !online.snapshot) return
-    void useOnline.getState().syncBattleProfile(localBattleProfile)
-  }, [online.status, online.snapshot?.player.id, profileSignature])
 
   const snapshot = online.snapshot
   const selected = WARFRONT_NODE_MAP[selectedKey]
@@ -55,19 +46,9 @@ export function WarfrontPanel({ now }: { now: number }) {
   const owned = snapshot?.nodes.filter(node => node.ownerSectId === mySectId).length ?? 0
   const ownArmy = snapshot?.armies?.find(army => army.isMine)
   const cooldown = snapshot ? Math.max(0, snapshot.player.cooldownUntil - now) : 0
-  const deployed = sum(formation)
-  const myPower = selectedState ? Math.round(battlePowerFromBattleProfile(snapshot?.battleProfile ?? localBattleProfile, formation, selectedState.guardTroop) * WARFRONT_TACTICS[tactic].powerFactor) : 0
+  const deployed = preview?.deployed ?? sum(formation)
+  const myPower = preview?.myPower ?? 0
   const friendly = Boolean(selectedState?.ownerSectId && selectedState.ownerSectId === mySectId)
-
-  useEffect(() => {
-    if (!snapshot) return
-    syncIncome(snapshot.warfrontIncome)
-    for (const report of snapshot.reports) {
-      if (report.attackerId === snapshot.player.id && report.win && Object.values(report.gained).some(value => (value ?? 0) > 0)) {
-        claimReward(report.id, report.gained)
-      }
-    }
-  }, [snapshot, syncIncome, claimReward])
 
   useEffect(() => {
     if (snapshot && !showRename) setNameDraft(snapshot.player.name)
@@ -75,8 +56,16 @@ export function WarfrontPanel({ now }: { now: number }) {
 
   useEffect(() => {
     if (!snapshot || !selectedState) return
-    setFormation(current => sum(current) > 0 ? clampFormation(current, snapshot.player.troops) : optimalOnlineFormation(snapshot.player.troops, selectedState.guardTroop))
-  }, [snapshot?.player.id, snapshot?.player.troops, selectedKey, selectedState?.guardTroop])
+    let disposed = false
+    const timer = window.setTimeout(() => {
+      void useOnline.getState().preview(selectedKey, tactic, formation).then(next => {
+        if (disposed || !next) return
+        setPreview(next)
+        if (sum(formation) === 0) setFormation(next.recommendedFormation)
+      })
+    }, 80)
+    return () => { disposed = true; window.clearTimeout(timer) }
+  }, [snapshot?.player.id, snapshot?.player.troops.kuilei, snapshot?.player.troops.yushou, snapshot?.player.troops.fuxiu, selectedKey, selectedState?.guardTroop, tactic, formation.kuilei, formation.yushou, formation.fuxiu])
 
   useEffect(() => {
     setGarrisonDraft(EMPTY_FORMATION)
@@ -86,14 +75,14 @@ export function WarfrontPanel({ now }: { now: number }) {
 
   const selectNode = (key: string) => {
     setSelectedKey(key)
-    setCommandCollapsed(true)
-    const next = snapshot?.nodes.find(node => node.key === key)
-    if (snapshot && next) setFormation(optimalOnlineFormation(snapshot.player.troops, next.guardTroop))
+    setCommandCollapsed(false)
+    setFormation(EMPTY_FORMATION)
+    setPreview(null)
   }
 
   const closeReport = useCallback(() => online.clearReport(), [online.clearReport])
 
-  if (online.status === 'idle' || online.status === 'connecting') return <ConnectionState title="正在连接苍梧战区…" />
+  if (!snapshot && (online.status === 'idle' || online.status === 'connecting')) return <ConnectionState title="正在连接苍梧战区…" />
   if (!snapshot || online.status === 'offline') {
     return <ConnectionState title="多人服务器暂时不可达" detail={online.error} action="重新连接" onAction={() => void online.connect()} />
   }
@@ -115,7 +104,7 @@ export function WarfrontPanel({ now }: { now: number }) {
             <button className="btn-sub" type="submit" disabled={nameDraft.trim().length < 2}>确认</button>
           </form>}
         </div>
-        <div className="online-identity-actions"><button className="btn-sub" data-tut="warfront-details" onClick={() => setShowDetails(true)}>排行榜</button><button className="btn-sub" data-tut="warfront-friends" onClick={() => setShowFriends(value => !value)}>好友{snapshot.friendRequests.filter(request => request.direction === 'incoming').length > 0 && <i>{snapshot.friendRequests.filter(request => request.direction === 'incoming').length}</i>}</button><button className="identity-reset" type="button" onClick={() => void online.newIdentity()} title="创建新的游客身份">新身份</button></div>
+        <div className="online-identity-actions"><button className="btn-sub" data-tut="warfront-details" onClick={() => setShowDetails(true)}>排行榜</button><button className="btn-sub" data-tut="warfront-friends" onClick={() => setShowFriends(value => !value)}>好友{snapshot.friendRequests.filter(request => request.direction === 'incoming').length > 0 && <i>{snapshot.friendRequests.filter(request => request.direction === 'incoming').length}</i>}</button><button className="identity-reset" type="button" onClick={() => setShowAccount(true)} title="切换账号">账号</button></div>
       </div>
 
       <div className="warfront-heading">
@@ -155,8 +144,8 @@ export function WarfrontPanel({ now }: { now: number }) {
             </div>
           ) : (
             <div className="warfront-command-summary">
-              <div className="warfront-command-stat"><span>出战</span><b>{deployed}</b><small>/ {MARCH_CAP} 人</small></div>
-              <div className="warfront-command-stat"><span>预计战力</span><b style={{ color: myPower >= selectedState!.guardPower ? 'var(--ok)' : 'var(--danger)' }}>{fmt(myPower)}</b><small>守军 {fmt(selectedState!.guardPower)}</small></div>
+              <div className="warfront-command-stat"><span>出战</span><b>{deployed}</b><small>/ {snapshot.player.marchCap} 人</small></div>
+              <div className="warfront-command-stat"><span>预计战力</span><b style={{ color: preview?.win ? 'var(--ok)' : 'var(--danger)' }}>{fmt(myPower)}</b><small>守军 {fmt(selectedState!.guardPower)}</small></div>
               <button className="btn-main warfront-march-button" disabled={marchDisabled} onClick={async () => {
                 setWorking(true)
                 try {
@@ -174,20 +163,24 @@ export function WarfrontPanel({ now }: { now: number }) {
               <div className="warfront-tactics" role="group" aria-label="行军策略">
                 {(Object.keys(WARFRONT_TACTICS) as WarfrontTactic[]).map(key => <button key={key} className={`warfront-tactic${tactic === key ? ' selected' : ''}`} onClick={() => setTactic(key)}><span>{WARFRONT_TACTICS[key].name}</span><small>{WARFRONT_TACTICS[key].desc}</small></button>)}
               </div>
-              <div className="progress"><i style={{ width: `${Math.min(100, myPower / Math.max(1, selectedState!.guardPower) * 100)}%`, background: myPower >= selectedState!.guardPower ? 'var(--ok)' : 'var(--danger)' }} /></div>
+              <div className="progress"><i style={{ width: `${preview?.powerPercent ?? 0}%`, background: preview?.win ? 'var(--ok)' : 'var(--danger)' }} /></div>
               {ownArmy && <div className="blocker">已有部队行军至 {WARFRONT_NODE_MAP[ownArmy.destinationKey ?? '']?.name ?? '目标据点'}，所有玩家都能看到军队移动。</div>}
               {cooldown > 0 && !ownArmy && <div className="blocker">服务端整备冷却 · {fmtTime(cooldown)} 后可再次下令。</div>}
-              <OnlineFormation enemyTroop={selectedState!.guardTroop} troops={snapshot.player.troops} formation={formation} onChange={setFormation} />
+              <OnlineFormation enemyTroop={selectedState!.guardTroop} troops={snapshot.player.troops} formation={formation} marchCap={snapshot.player.marchCap} recommended={preview?.recommendedFormation ?? EMPTY_FORMATION} onChange={setFormation} />
             </>}
             {online.error && <div className="blocker danger">{online.error}</div>}
           </>}
         </div>
       } />
+      {showAccount && <div className="account-switch-layer" role="dialog" aria-modal="true" aria-label="账号切换"><div className="account-switch-panel"><div className="account-switch-head"><div><b>账号管理</b><small>当前修士 · {snapshot.player.name}</small></div><button className="battle-skip" type="button" onClick={() => setShowAccount(false)}>关闭</button></div><p>切换账号不会删除当前修士数据。退出后可以登录其他账号，或注册新的修士。</p><div className="account-switch-actions"><button className="btn-main" type="button" onClick={() => { clearSessionToken(); window.location.reload() }}>退出并切换账号</button><button className="btn-sub" type="button" onClick={() => setShowAccount(false)}>继续游戏</button></div></div></div>}
+
       {showFriends && (
         <Sheet title="好友" sub={`共 ${snapshot.friends.length} 位`} onClose={() => setShowFriends(false)}>
           <FriendPanel snapshot={snapshot} />
         </Sheet>
       )}
+
+      <ChatPanel />
 
       {online.lastReport && (
         <div className="warfront-battle-drawer">
@@ -213,10 +206,13 @@ export function WarfrontPanel({ now }: { now: number }) {
   )
 }
 
-function OnlineFormation({ enemyTroop, troops, formation, onChange }: { enemyTroop: TroopKey; troops: Record<TroopKey, number>; formation: Record<TroopKey, number>; onChange: (next: Record<TroopKey, number>) => void }) {
+function OnlineFormation({ enemyTroop, troops, formation, marchCap, recommended, onChange }: { enemyTroop: TroopKey; troops: Record<TroopKey, number>; formation: Record<TroopKey, number>; marchCap: number; recommended: Record<TroopKey, number>; onChange: (next: Record<TroopKey, number>) => void }) {
   const used = sum(formation)
-  const apply = (key: TroopKey, value: number) => { const others = used - formation[key]; const max = Math.min(troops[key], MARCH_CAP - others); onChange({ ...formation, [key]: Math.max(0, Math.min(value, max)) }) }
-  return <details className="warfront-formation"><summary>编队配置 · {used}/{MARCH_CAP}<button className="btn-sub" type="button" onClick={event => { event.preventDefault(); onChange(optimalOnlineFormation(troops, enemyTroop)) }}>一键择优</button></summary>{TROOPS.map(t => { const counters = TROOP_MAP[t.key].counters === enemyTroop; const countered = TROOP_MAP[enemyTroop].counters === t.key; const max = Math.min(troops[t.key], formation[t.key] + Math.max(0, MARCH_CAP - used)); return <div className="card online-troop" key={t.key}><img className="thumb" src={sprite(t.sprite)} alt={t.name} /><div className="card-body"><div className="card-name">{t.name}{counters && <span className="tag-counter good">克制</span>}{countered && <span className="tag-counter bad">被克</span>}</div><div className="card-meta">出战 {formation[t.key]} / 兵力 {troops[t.key]}</div><input className="slider" type="range" min={0} max={Math.max(1, max)} value={formation[t.key]} onChange={event => apply(t.key, Number(event.target.value))} /></div></div> })}</details>
+  const [expanded, setExpanded] = useState(false)
+  const apply = (key: TroopKey, value: number) => { const others = used - formation[key]; const max = Math.min(troops[key], marchCap - others); onChange({ ...formation, [key]: Math.max(0, Math.min(value, max)) }) }
+  const explain: Record<TroopKey, string> = { kuilei: '重甲肉盾，适合守点与正面抗伤；克制御兽。', yushou: '机动突击，适合奇袭与追击；克制符修。', fuxiu: '远程压制，适合先手集火；克制傀儡。' }
+  const enemyName = TROOPS.find(item => item.key === enemyTroop)?.name ?? '守军'
+  return <div className={'warfront-formation' + (expanded ? ' expanded' : '')}><button className="formation-toggle" type="button" aria-expanded={expanded} onClick={() => setExpanded(value => !value)}><span>{expanded ? '▾' : '▸'} 编队配置 · {used}/{marchCap}</span><span className="btn-sub" role="presentation" onClick={event => { event.stopPropagation(); onChange(recommended) }}>一键择优</span></button>{expanded && <div className="formation-content"><div className="formation-guide">当前守军：<b>{enemyName}</b>。优先使用克制兵种，能提高有效战力；被克兵种只适合补足兵力。</div>{TROOPS.map(t => { const counters = TROOP_MAP[t.key].counters === enemyTroop; const countered = TROOP_MAP[enemyTroop].counters === t.key; const max = Math.min(troops[t.key], formation[t.key] + Math.max(0, marchCap - used)); return <div className="card online-troop" key={t.key}><img className="thumb" src={sprite(t.sprite)} alt={t.name} /><div className="card-body"><div className="card-name">{t.name}{counters && <span className="tag-counter good">克制</span>}{countered && <span className="tag-counter bad">被克</span>}</div><div className="card-meta">{explain[t.key]}</div><div className="card-meta">出战 {formation[t.key]} / 兵力 {troops[t.key]} · {counters ? '有效战力提升' : countered ? '有效战力下降' : '正常战力'}</div><input className="slider" type="range" min={0} max={Math.max(1, max)} value={formation[t.key]} onChange={event => apply(t.key, Number(event.target.value))} /></div></div> })}</div>}</div>
 }
 
 function GarrisonPanel({ node, troops, draft, onDraftChange }: { node: OnlineNodeState; troops: Record<TroopKey, number>; draft: Record<TroopKey, number>; onDraftChange: (next: Record<TroopKey, number>) => void }) {
@@ -240,7 +236,4 @@ function SectManagement({ snapshot, sectName, onNameChange }: { snapshot: NonNul
 
 function ConnectionState({ title, detail, action, onAction }: { title: string; detail?: string; action?: string; onAction?: () => void }) { return <div className="connection-state"><div className="connection-rune">◎</div><b>{title}</b>{detail && <span>{detail}</span>}{action && <button className="btn-main" onClick={onAction}>{action}</button>}</div> }
 function ownerLabel(node: OnlineNodeState, mySectId?: string): string { if (!node.ownerSectId) return '秘境守军'; if (node.ownerSectId === mySectId) return `${node.ownerSectName} · 我方`; return `${node.ownerSectName} · 敌方玩家` }
-function optimalOnlineFormation(troops: Record<TroopKey, number>, enemy: TroopKey): Record<TroopKey, number> { const keys: TroopKey[] = ['kuilei', 'yushou', 'fuxiu']; keys.sort((a, b) => relationRank(a, enemy) - relationRank(b, enemy)); const result = { ...EMPTY_FORMATION }; let left = MARCH_CAP; for (const key of keys) { result[key] = Math.min(troops[key], left); left -= result[key] } return result }
-function clampFormation(formation: Record<TroopKey, number>, troops: Record<TroopKey, number>): Record<TroopKey, number> { const out = { ...EMPTY_FORMATION }; let left = MARCH_CAP; for (const key of ['kuilei', 'yushou', 'fuxiu'] as TroopKey[]) { out[key] = Math.min(Math.max(0, formation[key] ?? 0), troops[key], left); left -= out[key] } return out }
-function relationRank(key: TroopKey, enemy: TroopKey) { if (TROOP_MAP[key].counters === enemy) return 0; if (TROOP_MAP[enemy].counters === key) return 2; return 1 }
 function sum(value: Record<TroopKey, number>) { return value.kuilei + value.yushou + value.fuxiu }

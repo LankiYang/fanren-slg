@@ -5,7 +5,6 @@ import { RESOURCE_META } from '../game/data'
 import { useGame } from '../game/store'
 import {
   EQUIPMENT_SLOT_META, RARITY_META, SEEK_MILESTONES, characterName, characterSubtitle,
-  cultivationRequirement,
 } from '../game/seek'
 import { fmt, sprite } from './util'
 
@@ -34,13 +33,13 @@ export function SeekPanel() {
   // 只会在挂载的那一瞬间跑一次，永远赶不上开局引导结束的时刻。
   useEffect(() => { maybeStartIntro('seek') }, [tutorialDone, maybeStartIntro])
 
-  const need = cultivationRequirement(s.realm)
+  const need = s.derived.realm.cultivationNeed
   const cultivationProgress = Math.min(1, s.seek.cultivation / Math.max(1, need))
   const nextMilestone = SEEK_MILESTONES.find(item => !s.seek.claimedMilestones.includes(item.id))
   const energyReady = s.seek.energy > 0
 
-  function doSeek() {
-    const result = seekNow()
+  async function doSeek() {
+    const result = await seekNow()
     if (!result.ok || !result.report) {
       setHint(result.reason ?? '暂时无法寻道')
       return
@@ -49,14 +48,14 @@ export function SeekPanel() {
     setReport(result.report)
   }
 
-  function temper(slot: EquipmentSlot) {
-    const result = temperEquipment(slot)
+  async function temper(slot: EquipmentSlot) {
+    const result = await temperEquipment(slot)
     setHint(result.ok ? '灵装淬炼完成，战力已更新。' : result.reason ?? '淬炼失败')
   }
 
-  function claimMilestone() {
+  async function claimMilestone() {
     if (!nextMilestone) return
-    const result = claimSeekMilestone(nextMilestone.id)
+    const result = await claimSeekMilestone(nextMilestone.id)
     setHint(result.ok ? `已领取「${nextMilestone.name}」奖励。` : result.reason ?? '奖励尚未可领')
   }
 
@@ -130,7 +129,7 @@ export function SeekPanel() {
               key={slot}
               item={s.seek.equipmentLoadout[slot]}
               slot={slot}
-              canTemper={s.seek.equipmentDust >= Math.max(12, Math.round((s.seek.equipmentLoadout[slot]?.power ?? 0) * 0.16))}
+            canTemper={s.seek.equipmentDust >= (s.derived.seekTemperCosts[slot] ?? 0) && (s.derived.seekTemperCosts[slot] ?? 0) > 0}
               onTemper={() => temper(slot)}
             />
           ))}

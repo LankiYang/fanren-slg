@@ -1,13 +1,12 @@
-import { randomBytes, randomUUID } from 'node:crypto'
-import { CULTIVATORS, REALMS, TROOP_MAP } from '../src/game/data'
-import { ARTIFACT_MAP, GONGFA_MAP } from '../src/game/systems'
-import { CULTIVATOR_MAX_LEVEL, TUNE } from '../src/game/balance'
-import { battlePowerFromBattleProfile, defaultBattleProfile, formationPowerFromBattleProfile } from '../src/game/compute'
+import { randomBytes, randomUUID, scryptSync, timingSafeEqual } from 'node:crypto'
+import { TROOP_MAP } from '../src/game/data'
+import { battlePowerFromBattleProfile, battleProfileFromGameState, defaultBattleProfile, formationPowerFromBattleProfile } from '../src/game/compute'
 import { calculateBattleLosses } from '../src/game/penalty'
 import type { BattleProfile, Resources, TroopKey, WarfrontTactic } from '../src/game/types'
 import { WARFRONT_NODE_MAP, WARFRONT_NODES, WARFRONT_SPAWN_POINTS, WARFRONT_TACTICS, type WarfrontNodeDef } from '../src/game/warfront'
-import { ONLINE_SCHEMA_VERSION, type AttackPayload, type GarrisonPayload, type LeaderboardEntry, type MapPoint, type MarchPayload, type OnlineArmy, type OnlineBattleReport, type OnlineFriend, type OnlineFriendRequest, type OnlinePlayerSearch, type SyncBattleProfilePayload, type WarfrontSnapshot, type WithdrawPayload } from '../src/online/contracts'
-import type { ServerFriendRequest, ServerMarch, ServerNode, ServerPlayer, ServerState } from './model'
+import { ONLINE_SCHEMA_VERSION, type AttackPayload, type GarrisonPayload, type LeaderboardEntry, type MapPoint, type MarchPayload, type OnlineArmy, type OnlineBattleReport, type OnlineFriend, type OnlineFriendRequest, type OnlinePlayerSearch, type SyncBattleProfilePayload, type WarfrontPreview, type WarfrontPreviewPayload, type WarfrontSnapshot, type WithdrawPayload } from '../src/online/contracts'
+import type { ChatChannel, ServerAccount, ServerChatMessage, ServerFriendRequest, ServerMarch, ServerNode, ServerPlayer, ServerState } from './model'
+import { advanceGame, creditGameReward, createGameSnapshot, createServerGameState, executeGameCommand, GameDomainError } from './gameDomain'
 
 const TROOP_KEYS: TroopKey[] = ['kuilei', 'yushou', 'fuxiu']
 const STARTING_TROOPS = 120
@@ -23,8 +22,9 @@ const MARCH_MIN_MS = 4_000
 const MARCH_MAX_MS = 9_000
 const MARCH_MS_PER_DISTANCE = 62
 const FRIEND_ONLINE_WINDOW_MS = 15_000
-const PROFILE_TROOPS_MAX = 1_000_000
-const PROFILE_EQUIPMENT_MAX = 10_000
+const SESSION_TTL_MS = 30 * 24 * 60 * 60 * 1000
+const CHAT_COOLDOWN_MS = 2_000
+const CHAT_MAX_PER_MINUTE = 20
 
 // ═══ AI 宗门：没有真人同场时，战区不该是一张静止的地图 ═══
 // 苍梧宗在据点文案里本就是"苍梧宗主力"这种设定好的对手，直接把它做成常驻电脑宗门，
@@ -50,13 +50,15 @@ export function createGuest(state: ServerState, requestedName?: string): ServerP
   const sect = humanSects[(state.playerSequence - 1) % humanSects.length]
   const fallbackName = `散修${String(state.playerSequence).padStart(3, '0')}`
   const name = sanitizeName(requestedName) || fallbackName
+  const game = createServerGameState()
+  game.troops = { kuilei: STARTING_TROOPS, yushou: STARTING_TROOPS, fuxiu: STARTING_TROOPS }
   const player: ServerPlayer = {
     id,
     token: randomBytes(24).toString('base64url'),
     name,
     sectId: sect.id,
     score: 0,
-    troops: { kuilei: STARTING_TROOPS, yushou: STARTING_TROOPS, fuxiu: STARTING_TROOPS },
+    troops: { ...game.troops },
     cooldownUntil: 0,
     recruitReadyAt: 0,
     warEnergy: WAR_ENERGY_MAX,
@@ -69,6 +71,8 @@ export function createGuest(state: ServerState, requestedName?: string): ServerP
     lastSeenAt: Date.now(),
     isBot: false,
     nextActionAt: 0,
+    game,
+    gameIdempotency: {},
   }
   state.players[id] = player
   return player
@@ -104,6 +108,8 @@ export function ensureBots(state: ServerState): void {
       lastSeenAt: now,
       isBot: true,
       nextActionAt: now + randomInt(5_000, 20_000) + i * 4_000,
+      game: { ...createServerGameState(now), troops: { kuilei: BOT_STARTING_TROOPS, yushou: BOT_STARTING_TROOPS, fuxiu: BOT_STARTING_TROOPS } },
+      gameIdempotency: {},
     }
   }
 }
@@ -121,7 +127,18 @@ export function reassignHumansOutOfAiSect(state: ServerState): void {
 }
 
 export function authenticate(state: ServerState, token: string | undefined): ServerPlayer {
-  if (!token) throw new DomainError('请先进入联机战区', 401, 'UNAUTHORIZED')
+  if (!token) throw new DomainError('请先登录账号', 401, 'UNAUTHORIZED')
+  const session = token ? state.sessions[token] : undefined
+  if (session && session.expiresAt > Date.now()) {
+    const player = state.players[session.playerId]
+    if (player && !player.isBot) {
+      session.lastSeenAt = Date.now()
+      player.lastSeenAt = Date.now()
+      advanceWorld(state, Date.now())
+      restoreWarEnergy(player)
+      return player
+    }
+  }
   const player = Object.values(state.players).find(x => x.token === token)
   if (!player || player.isBot) throw new DomainError('联机凭证已失效，请重新登录', 401, 'UNAUTHORIZED')
   player.lastSeenAt = Date.now()
@@ -130,10 +147,116 @@ export function authenticate(state: ServerState, token: string | undefined): Ser
   return player
 }
 
+export function registerAccount(state: ServerState, usernameRaw: string, password: string, displayName: string): { account: ServerAccount; player: ServerPlayer } {
+  const username = normalizeUsername(usernameRaw)
+  if (username.length < 6) throw new DomainError('账号至少 6 位', 400, 'INVALID_USERNAME')
+  if (!/^[a-zA-Z0-9_]+$/.test(username)) throw new DomainError('账号只能使用字母、数字和下划线', 400, 'INVALID_USERNAME')
+  if (password.length < 6) throw new DomainError('密码至少 6 位', 400, 'INVALID_PASSWORD')
+  if (Object.values(state.accounts).some(account => account.normalizedUsername === username.toLowerCase())) throw new DomainError('账号已存在', 409, 'USERNAME_TAKEN')
+  const player = createGuest(state, displayName)
+  const salt = randomBytes(16).toString('hex')
+  const account: ServerAccount = { id: `acc-${randomUUID()}`, username, normalizedUsername: username.toLowerCase(), passwordHash: hashPassword(password, salt), passwordSalt: salt, playerId: player.id, createdAt: Date.now(), lastLoginAt: Date.now() }
+  state.accounts[account.id] = account
+  return { account, player }
+}
+
+export function loginAccount(state: ServerState, usernameRaw: string, password: string): { account: ServerAccount; player: ServerPlayer; token: string } {
+  const normalized = normalizeUsername(usernameRaw).toLowerCase()
+  const account = Object.values(state.accounts).find(item => item.normalizedUsername === normalized)
+  if (!account || !verifyPassword(password, account.passwordSalt, account.passwordHash)) throw new DomainError('账号或密码错误', 401, 'INVALID_CREDENTIALS')
+  const player = state.players[account.playerId]
+  if (!player) throw new DomainError('账号角色数据缺失', 500, 'ACCOUNT_PLAYER_MISSING')
+  const token = createSession(state, account, player)
+  account.lastLoginAt = Date.now()
+  return { account, player, token }
+}
+
+export function createSession(state: ServerState, account: ServerAccount, player: ServerPlayer): string {
+  const token = randomBytes(32).toString('base64url')
+  state.sessions[token] = { token, accountId: account.id, playerId: player.id, createdAt: Date.now(), expiresAt: Date.now() + SESSION_TTL_MS, lastSeenAt: Date.now() }
+  return token
+}
+
+export function chatMessages(state: ServerState, player: ServerPlayer, channel: ChatChannel, after?: string): ServerChatMessage[] {
+  if (channel !== 'world' && channel !== 'sect') throw new DomainError('聊天频道无效')
+  const list = state.chatMessages.filter(message => message.channel === channel && (channel === 'world' || message.sectId === player.sectId))
+  const start = after ? Math.max(0, list.findIndex(message => message.id === after) + 1) : Math.max(0, list.length - 60)
+  return list.slice(start)
+}
+
+export function sendChatMessage(state: ServerState, player: ServerPlayer, channel: ChatChannel, rawText: string): ServerChatMessage[] {
+  if (channel !== 'world' && channel !== 'sect') throw new DomainError('聊天频道无效')
+  const text = rawText.replace(/[\u0000-\u0008\u000B\u000C\u000E-\u001F<>]/g, '').trim().slice(0, 120)
+  if (!text) throw new DomainError('聊天内容不能为空')
+  const now = Date.now()
+  const mine = state.chatMessages.filter(message => message.senderId === player.id && now - message.createdAt < 60_000)
+  if (mine.length >= CHAT_MAX_PER_MINUTE) throw new DomainError('发言过于频繁，请稍后再试', 429, 'CHAT_RATE_LIMIT')
+  const last = mine[mine.length - 1]
+  if (last && now - last.createdAt < CHAT_COOLDOWN_MS) throw new DomainError('请稍等片刻再发言', 429, 'CHAT_COOLDOWN')
+  if (channel === 'sect' && !player.sectId) throw new DomainError('加入宗门后才能使用宗门频道')
+  state.chatMessages.push({ id: `msg-${randomUUID()}`, channel, senderId: player.id, senderName: player.name, sectId: player.sectId, sectName: state.sects[player.sectId]?.name ?? '无宗门', text, command: parseChatCommand(text), createdAt: now })
+  state.chatMessages = state.chatMessages.slice(-500)
+  return chatMessages(state, player, channel)
+}
+
+function parseChatCommand(text: string): { kind: string; args: string[] } | null {
+  if (!text.startsWith('/')) return null
+  const [raw, ...args] = text.slice(1).split(/\s+/)
+  const aliases: Record<string, string> = { '集合': 'rally', '集结': 'rally', '进攻': 'attack', '防守': 'defend', '驻防': 'garrison', '撤退': 'retreat', '跟进': 'follow', '收到': 'ack', '谢谢': 'thanks' }
+  const kind = aliases[raw]
+  return kind ? { kind, args: args.slice(0, 3) } : { kind: 'custom', args: [raw, ...args].slice(0, 4) }
+}
+
+function normalizeUsername(value: string): string { return value.trim().slice(0, 24) }
+function hashPassword(password: string, salt: string): string { return scryptSync(password, salt, 64).toString('hex') }
+function verifyPassword(password: string, salt: string, expected: string): boolean {
+  const actual = Buffer.from(hashPassword(password, salt), 'hex')
+  const target = Buffer.from(expected, 'hex')
+  return actual.length === target.length && timingSafeEqual(actual, target)
+}
+
+export function gameSnapshot(state: ServerState, player: ServerPlayer) {
+  const offlineReport = preparePlayerGame(state, player)
+  return createGameSnapshot(player.game, offlineReport)
+}
+
+export function gameCommand(state: ServerState, player: ServerPlayer, command: Parameters<typeof executeGameCommand>[1], payload: Record<string, unknown> | undefined, requestId: string) {
+  player.game.onlineWarfrontIncome = warfrontIncomeForPlayer(state, player)
+  let context
+  try {
+    context = executeGameCommand(player, command, payload, requestId)
+  } catch (error) {
+    if (error instanceof GameDomainError) throw new DomainError(error.message, error.status, error.code)
+    throw error
+  }
+  syncBattleProfileFromGame(player)
+  mirrorWarfrontTroops(player)
+  refreshAllGarrisons(state)
+  return { snapshot: createGameSnapshot(player.game, context.offlineReport), result: context.result }
+}
+
+function preparePlayerGame(state: ServerState, player: ServerPlayer) {
+  player.game.onlineWarfrontIncome = warfrontIncomeForPlayer(state, player)
+  const offlineReport = advanceGame(player.game, Date.now())
+  syncBattleProfileFromGame(player)
+  mirrorWarfrontTroops(player)
+  return offlineReport
+}
+
+function syncBattleProfileFromGame(player: ServerPlayer): void {
+  player.battleProfile = battleProfileFromGameState(player.game)
+  player.profileUpdatedAt = Date.now()
+}
+
+function mirrorWarfrontTroops(player: ServerPlayer): void {
+  player.troops = { ...player.game.troops }
+}
+
 export function createSnapshot(state: ServerState, player: ServerPlayer): WarfrontSnapshot {
   const now = Date.now()
   advanceWorld(state, now)
   restoreWarEnergy(player)
+  preparePlayerGame(state, player)
   refreshAllGarrisons(state)
   const players = Object.values(state.players)
   return {
@@ -147,13 +270,14 @@ export function createSnapshot(state: ServerState, player: ServerPlayer): Warfro
       sectId: player.sectId,
       sectName: state.sects[player.sectId]?.name ?? '无宗门',
       score: player.score,
-      troops: { ...player.troops },
+      troops: { ...player.game.troops },
       cooldownUntil: player.cooldownUntil,
       recruitReadyAt: player.recruitReadyAt,
       warEnergy: player.warEnergy,
       warEnergyMax: WAR_ENERGY_MAX,
+      marchCap: MAX_MARCH_TROOPS,
       mapPosition: { ...player.mapPosition },
-      battlePower: Math.round(formationPowerFromBattleProfile(player.battleProfile, player.troops)),
+      battlePower: Math.round(formationPowerFromBattleProfile(player.battleProfile, player.game.troops)),
       battleProfileUpdatedAt: player.profileUpdatedAt,
     },
     nodes: WARFRONT_NODES.map(def => {
@@ -186,10 +310,33 @@ export function createSnapshot(state: ServerState, player: ServerPlayer): Warfro
   }
 }
 
+/** 只用于界面预览的服务端计算；真正出征仍会在 attack/march 内再次校验。 */
+export function previewWarfront(state: ServerState, player: ServerPlayer, payload: WarfrontPreviewPayload): WarfrontPreview {
+  preparePlayerGame(state, player)
+  const def = WARFRONT_NODE_MAP[payload.nodeKey]
+  const node = state.nodes[payload.nodeKey]
+  if (!def || !node) throw new DomainError('据点不存在', 404, 'NODE_NOT_FOUND')
+  const tactic = WARFRONT_TACTICS[payload.tactic]
+  if (!tactic) throw new DomainError('出征策略无效')
+  const formation = normalizeFormation(payload.formation, player.game.troops)
+  const deployed = sumTroops(formation)
+  if (deployed > MAX_MARCH_TROOPS) throw new DomainError(`超过赛季统兵上限（${MAX_MARCH_TROOPS}）`)
+  const myPower = Math.round(calculatePower(player.battleProfile, formation, node.guardTroop) * tactic.powerFactor)
+  return {
+    nodeKey: def.key,
+    tactic: payload.tactic,
+    deployed,
+    myPower,
+    enemyPower: node.guardPower,
+    win: myPower >= node.guardPower,
+    powerPercent: Math.min(100, Math.round(myPower / Math.max(1, node.guardPower) * 100)),
+    recommendedFormation: botFormation(player, node.guardTroop),
+  }
+}
+
 /** 接收本地洞府成长镜像；服务器只保存白名单字段并重新计算战力。 */
-export function syncBattleProfile(state: ServerState, player: ServerPlayer, payload: SyncBattleProfilePayload): void {
-  player.battleProfile = normalizeBattleProfile(payload.profile)
-  player.profileUpdatedAt = Date.now()
+export function syncBattleProfile(state: ServerState, player: ServerPlayer, _payload: SyncBattleProfilePayload): void {
+  preparePlayerGame(state, player)
   refreshAllGarrisons(state)
 }
 
@@ -274,7 +421,7 @@ export function march(state: ServerState, player: ServerPlayer, payload: MarchPa
   if (now < player.cooldownUntil) throw new DomainError('部队正在整备，请稍候再出征', 409, 'COOLDOWN')
   if (player.warEnergy <= 0) throw new DomainError('战争令不足，等待恢复或先征募援军', 409, 'WAR_ENERGY')
 
-  const formation = normalizeFormation(payload.formation, player.troops)
+  const formation = normalizeFormation(payload.formation, player.game.troops)
   const deployed = sumTroops(formation)
   if (deployed <= 0) throw new DomainError('请至少派出一支部队')
   if (deployed > MAX_MARCH_TROOPS) throw new DomainError(`超过赛季统兵上限（${MAX_MARCH_TROOPS}）`)
@@ -295,7 +442,7 @@ export function march(state: ServerState, player: ServerPlayer, payload: MarchPa
     deployed,
     tactic: payload.tactic,
   }
-  for (const key of TROOP_KEYS) player.troops[key] -= formation[key]
+  for (const key of TROOP_KEYS) player.game.troops[key] -= formation[key]
   player.warEnergy -= 1
   player.march = active
   player.cooldownUntil = now + ATTACK_COOLDOWN_MS
@@ -320,7 +467,7 @@ export function advanceWorld(state: ServerState, now: number): void {
 
 /** 机器人的一次行动：手头兵力不够就先征募，再评估一个能打的据点出征；全程不抛错到调用方。 */
 function runBotTurn(state: ServerState, bot: ServerPlayer, now: number): void {
-  if (now >= bot.recruitReadyAt && sumTroops(bot.troops) < BOT_TARGET_TROOPS) {
+  if (now >= bot.recruitReadyAt && sumTroops(bot.game.troops) < BOT_TARGET_TROOPS) {
     try { recruit(bot) } catch { /* 征募冷却或已满，跳过 */ }
   }
   if (bot.warEnergy > 0 && now >= bot.cooldownUntil) {
@@ -356,7 +503,7 @@ function botFormation(bot: ServerPlayer, enemyTroop: TroopKey): Record<TroopKey,
   const result = emptyFormation()
   let left = MAX_MARCH_TROOPS
   for (const key of keys) {
-    const take = Math.min(bot.troops[key], left)
+    const take = Math.min(bot.game.troops[key], left)
     result[key] = take
     left -= take
   }
@@ -415,6 +562,7 @@ function resolveMarch(state: ServerState, player: ServerPlayer, active: ServerMa
   applyLosses(survivors, active.formation, losses)
   const scoreGained = win ? 20 + Math.round(enemyPower / 80) : 4
   const captured = win && node.ownerPlayerId !== player.id
+  const gained = win ? creditGameReward(player.game, def.reward) : {}
 
   player.score += scoreGained
   state.sects[player.sectId].score += scoreGained
@@ -422,7 +570,7 @@ function resolveMarch(state: ServerState, player: ServerPlayer, active: ServerMa
     occupyNode(state, node, player, survivors, myPower, active.tactic)
     player.mapPosition = { ...def.position }
   } else {
-    addFormation(player.troops, survivors)
+    addFormation(player.game.troops, survivors)
     player.mapPosition = { ...active.from }
   }
   player.march = null
@@ -448,14 +596,14 @@ function resolveMarch(state: ServerState, player: ServerPlayer, active: ServerMa
     losses,
     scoreGained,
     captured,
-    gained: win ? def.reward : {},
-    troopsAfter: { ...player.troops },
+    gained,
+    troopsAfter: { ...player.game.troops },
   }
   appendReport(state, report)
 }
 
 function returnMarch(player: ServerPlayer, active: ServerMarch): void {
-  addFormation(player.troops, active.formation)
+  addFormation(player.game.troops, active.formation)
   player.mapPosition = { ...active.from }
   player.march = null
 }
@@ -488,7 +636,7 @@ export function attack(state: ServerState, player: ServerPlayer, payload: Attack
   if (now < player.cooldownUntil) throw new DomainError('部队正在整备，请稍候再出征', 409, 'COOLDOWN')
   if (player.warEnergy <= 0) throw new DomainError('战争令不足，等待恢复或先征募援军', 409, 'WAR_ENERGY')
 
-  const formation = normalizeFormation(payload.formation, player.troops)
+  const formation = normalizeFormation(payload.formation, player.game.troops)
   const deployed = sumTroops(formation)
   if (deployed <= 0) throw new DomainError('请至少派出一支部队')
   if (deployed > 180) throw new DomainError('超过赛季统兵上限（180）')
@@ -513,7 +661,7 @@ export function attack(state: ServerState, player: ServerPlayer, payload: Attack
     failMin: 0.16,
     failMax: 0.45,
   })
-  for (const key of TROOP_KEYS) player.troops[key] -= formation[key]
+  for (const key of TROOP_KEYS) player.game.troops[key] -= formation[key]
   const survivors = { ...formation }
   applyLosses(survivors, formation, losses)
   player.warEnergy -= 1
@@ -523,8 +671,9 @@ export function attack(state: ServerState, player: ServerPlayer, payload: Attack
   player.cooldownUntil = now + ATTACK_COOLDOWN_MS
   state.sects[player.sectId].score += scoreGained
   const captured = win && node.ownerPlayerId !== player.id
+  const gained = win ? creditGameReward(player.game, def.reward) : {}
   if (win) occupyNode(state, node, player, survivors, myPower, payload.tactic)
-  else addFormation(player.troops, survivors)
+  else addFormation(player.game.troops, survivors)
 
   const report: OnlineBattleReport = {
     id: `r-${randomUUID()}`,
@@ -547,8 +696,8 @@ export function attack(state: ServerState, player: ServerPlayer, payload: Attack
     losses,
     scoreGained,
     captured,
-    gained: win ? def.reward : {},
-    troopsAfter: { ...player.troops },
+    gained,
+    troopsAfter: { ...player.game.troops },
   }
   state.reports.push(report)
   if (state.reports.length > 300) state.reports.splice(0, state.reports.length - 300)
@@ -562,11 +711,11 @@ export function garrison(state: ServerState, player: ServerPlayer, payload: Garr
   const node = state.nodes[payload.nodeKey]
   if (!node || !WARFRONT_NODE_MAP[payload.nodeKey]) throw new DomainError('据点不存在', 404, 'NODE_NOT_FOUND')
   if (node.ownerSectId !== player.sectId) throw new DomainError('只有同宗据点可以派遣援军')
-  const formation = normalizeFormation(payload.formation, player.troops)
+  const formation = normalizeFormation(payload.formation, player.game.troops)
   const amount = sumTroops(formation)
   if (amount <= 0) throw new DomainError('请至少派出一支援军')
   if (sumTroops(node.guardFormation) + amount > GARRISON_CAP) throw new DomainError(`据点驻军上限为 ${GARRISON_CAP}`)
-  for (const key of TROOP_KEYS) player.troops[key] -= formation[key]
+  for (const key of TROOP_KEYS) player.game.troops[key] -= formation[key]
   for (const key of TROOP_KEYS) node.guardFormation[key] += formation[key]
   const mine = node.garrisonContributors[player.id] ?? emptyFormation()
   for (const key of TROOP_KEYS) mine[key] += formation[key]
@@ -586,8 +735,8 @@ export function withdrawGarrison(state: ServerState, player: ServerPlayer, paylo
   const request = normalizeFormation(payload.formation, mine)
   if (sumTroops(request) <= 0) throw new DomainError('没有可撤回的援军')
   for (const key of TROOP_KEYS) {
-    if (player.troops[key] + request[key] > MAX_TROOPS) throw new DomainError('撤回后超过个人兵力上限')
-    player.troops[key] += request[key]
+    if (player.game.troops[key] + request[key] > MAX_TROOPS) throw new DomainError('撤回后超过个人兵力上限')
+    player.game.troops[key] += request[key]
     node.guardFormation[key] -= request[key]
     mine[key] -= request[key]
   }
@@ -601,7 +750,7 @@ export function recruit(player: ServerPlayer): Record<TroopKey, number> {
   const now = Date.now()
   if (now < player.recruitReadyAt) throw new DomainError('赛季征募尚在整备', 409, 'RECRUIT_COOLDOWN')
   const gained = { kuilei: RECRUIT_AMOUNT, yushou: RECRUIT_AMOUNT, fuxiu: RECRUIT_AMOUNT }
-  for (const key of TROOP_KEYS) player.troops[key] = Math.min(300, player.troops[key] + gained[key])
+  for (const key of TROOP_KEYS) player.game.troops[key] = Math.min(300, player.game.troops[key] + gained[key])
   player.recruitReadyAt = now + RECRUIT_COOLDOWN_MS
   return gained
 }
@@ -662,7 +811,7 @@ function occupyNode(state: ServerState, node: ServerNode, player: ServerPlayer, 
       scoreGained: 0,
       captured: true,
       gained: {},
-      troopsAfter: contributor ? { ...contributor.troops } : emptyFormation(),
+      troopsAfter: contributor ? { ...contributor.game.troops } : emptyFormation(),
       kind: 'garrisonLoss',
     })
   }
@@ -741,43 +890,6 @@ function cloneBattleProfile(profile: BattleProfile): BattleProfile {
     artifacts: { ...profile.artifacts },
     activePills: { ...profile.activePills },
   }
-}
-
-function normalizeBattleProfile(raw: BattleProfile): BattleProfile {
-  if (!raw || raw.version !== 1) throw new DomainError('战斗档案版本不受支持', 400, 'PROFILE_VERSION')
-  const profile = defaultBattleProfile()
-  profile.dongfuLevel = integerField(raw.dongfuLevel, 0, TUNE.dongfuMax, '洞府等级')
-  profile.yanwuLevel = integerField(raw.yanwuLevel, 0, TUNE.dongfuMax, '演武场等级')
-  profile.realm = integerField(raw.realm, 0, REALMS.length - 1, '境界')
-  for (const key of TROOP_KEYS) profile.troops[key] = integerField(raw.troops?.[key], 0, PROFILE_TROOPS_MAX, `${key}兵力`)
-  for (const def of CULTIVATORS) {
-    const value = raw.cultivators?.[def.key]
-    if (!value) continue
-    if (typeof value.owned !== 'boolean') throw new DomainError('修士档案无效', 400, 'PROFILE_CULTIVATOR')
-    profile.cultivators[def.key] = { owned: value.owned, level: integerField(value.level, 0, CULTIVATOR_MAX_LEVEL, `${def.name}等级`) }
-  }
-  for (const def of Object.values(GONGFA_MAP)) {
-    const level = raw.gongfa?.[def.key]
-    if (level !== undefined) profile.gongfa[def.key] = integerField(level, 0, def.maxLevel, `${def.name}等级`)
-  }
-  for (const def of Object.values(ARTIFACT_MAP)) {
-    const level = raw.artifacts?.[def.key]
-    if (level !== undefined) profile.artifacts[def.key] = integerField(level, 0, def.maxLevel, `${def.name}等级`)
-  }
-  if (!Number.isFinite(raw.equipmentPower) || raw.equipmentPower < 0 || raw.equipmentPower > PROFILE_EQUIPMENT_MAX) {
-    throw new DomainError('灵装战力档案无效', 400, 'PROFILE_EQUIPMENT')
-  }
-  profile.equipmentPower = Math.round(raw.equipmentPower)
-  for (const key of ['qi', 'body', 'mind'] as const) {
-    if (typeof raw.activePills?.[key] !== 'boolean') throw new DomainError('丹药档案无效', 400, 'PROFILE_PILL')
-    profile.activePills[key] = raw.activePills[key]
-  }
-  return profile
-}
-
-function integerField(value: unknown, min: number, max: number, label: string): number {
-  if (!Number.isInteger(value) || Number(value) < min || Number(value) > max) throw new DomainError(`${label}档案无效`, 400, 'PROFILE_FIELD')
-  return Number(value)
 }
 
 function emptyFormation(): Record<TroopKey, number> {

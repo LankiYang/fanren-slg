@@ -1,7 +1,6 @@
 import { TROOPS, TROOP_MAP } from '../game/data'
 import type { TroopKey } from '../game/types'
-import { useGame, troopPower, counterBonus } from '../game/store'
-import { currentMarchCap, formationUsed, optimalFormation } from '../game/compute'
+import { useGame } from '../game/store'
 import { sprite, fmt } from './util'
 
 /**
@@ -14,9 +13,8 @@ import { sprite, fmt } from './util'
 export function Formation({ enemyTroop }: { enemyTroop: TroopKey }) {
   const s = useGame()
   const setFormation = useGame(x => x.setFormation)
-  const cb = counterBonus(s)
-  const cap = currentMarchCap(s)
-  const used = formationUsed(s)
+  const cap = s.derived.marchCap
+  const used = s.derived.formationUsed
   const left = cap - used
 
   const apply = (k: TroopKey, v: number) => {
@@ -33,7 +31,7 @@ export function Formation({ enemyTroop }: { enemyTroop: TroopKey }) {
         <button
           className="btn-sub"
           style={{ float: 'right', padding: '2px 8px', fontSize: 10 }}
-          onClick={() => setFormation(optimalFormation(s, enemyTroop))}
+          onClick={() => setFormation(s.derived.recommendedFormationByEnemy[enemyTroop] ?? { kuilei: 0, yushou: 0, fuxiu: 0 })}
         >
           一键择优
         </button>
@@ -58,12 +56,12 @@ export function Formation({ enemyTroop }: { enemyTroop: TroopKey }) {
       </div>
 
       {TROOPS.map(t => {
-        const send = Math.min(s.formation[t.key] ?? 0, s.troops[t.key])
+        const send = s.formation[t.key] ?? 0
         const have = s.troops[t.key]
         const counters = TROOP_MAP[t.key].counters === enemyTroop
         const countered = TROOP_MAP[enemyTroop].counters === t.key
-        const unit = troopPower(s, t.key)
-        const eff = counters ? unit * cb : countered ? unit / cb : unit
+        const detail = s.derived.troopDetails[t.key]
+        const eff = detail?.powerByEnemy[enemyTroop] ?? 0
         const sliderMax = Math.min(have, send + Math.max(0, left))
 
         return (
@@ -72,8 +70,8 @@ export function Formation({ enemyTroop }: { enemyTroop: TroopKey }) {
             <div className="card-body">
               <div className="card-name">
                 {t.name}
-                {counters && <span className="tag-counter good">克制 ×{cb.toFixed(2)}</span>}
-                {countered && <span className="tag-counter bad">被克 ÷{cb.toFixed(2)}</span>}
+                {counters && <span className="tag-counter good">克制</span>}
+                {countered && <span className="tag-counter bad">被克</span>}
               </div>
               <div className="card-meta">
                 出战 {fmt(send)} / 拥有 {fmt(have)} · 单位战力{' '}

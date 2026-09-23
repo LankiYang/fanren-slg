@@ -12,9 +12,9 @@ interface JourneyGuideProps {
 /** 主城常驻的轻量追踪器；完整解释放进“道途指南”面板，避免挡住地图建筑。 */
 export function JourneyGuide({ now, onOpen, onGo }: JourneyGuideProps) {
   const state = useGame()
-  const guide = currentGuide(state, now)
+  const guide = currentGuide(state, now, state.derived)
   const objective = guide.objective
-  const ready = !!objective && objective.done(state)
+  const ready = !!objective && (state.derived.questDetails[objective.id]?.done ?? objective.done(state))
   const width = guide.progress.total > 0 ? Math.min(100, guide.progress.done / guide.progress.total * 100) : 100
 
   return (

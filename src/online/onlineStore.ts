@@ -1,8 +1,8 @@
 import { create } from 'zustand'
 import type { BattleProfile, TroopKey, WarfrontTactic } from '../game/types'
-import type { OnlineBattleReport, OnlinePlayerSearch, WarfrontSnapshot } from './contracts'
+import type { OnlineBattleReport, OnlinePlayerSearch, WarfrontPreview, WarfrontSnapshot } from './contracts'
 import {
-  attackWarfront, clearSessionToken, createOnlineSect, fetchWarfront, garrisonWarfront, getSessionToken, guestLogin, joinOnlineSect, marchWarfront, OnlineApiError, recruitSeasonTroops, removeOnlineFriend, renameOnlinePlayer, requestOnlineFriend, respondOnlineFriend, searchOnlinePlayers, syncOnlineBattleProfile, withdrawWarfront,
+  attackWarfront, clearSessionToken, createOnlineSect, fetchChatMessages, fetchWarfront, garrisonWarfront, getSessionToken, guestLogin, joinOnlineSect, loginAccount, marchWarfront, OnlineApiError, previewWarfront, recruitSeasonTroops, registerAccount, removeOnlineFriend, renameOnlinePlayer, requestOnlineFriend, respondOnlineFriend, searchOnlinePlayers, sendChatMessage, syncOnlineBattleProfile, withdrawWarfront,
 } from './api'
 
 type ConnectionStatus = 'idle' | 'connecting' | 'online' | 'offline'
@@ -16,6 +16,7 @@ interface OnlineState {
   refresh: (silent?: boolean) => Promise<void>
   attack: (nodeKey: string, tactic: WarfrontTactic, formation: Record<TroopKey, number>) => Promise<OnlineBattleReport | null>
   march: (nodeKey: string, tactic: WarfrontTactic, formation: Record<TroopKey, number>) => Promise<boolean>
+  preview: (nodeKey: string, tactic: WarfrontTactic, formation: Record<TroopKey, number>) => Promise<WarfrontPreview | null>
   recruit: () => Promise<boolean>
   garrison: (nodeKey: string, formation: Record<TroopKey, number>) => Promise<boolean>
   withdraw: (nodeKey: string, formation: Record<TroopKey, number>) => Promise<boolean>
@@ -29,6 +30,10 @@ interface OnlineState {
   removeFriend: (friendId: string) => Promise<boolean>
   newIdentity: () => Promise<void>
   clearReport: () => void
+  register: (username: string, password: string, displayName: string) => Promise<boolean>
+  login: (username: string, password: string) => Promise<boolean>
+  loadChat: (channel: 'world' | 'sect', after?: string) => Promise<import('./contracts').ChatMessage[]>
+  sendChat: (channel: 'world' | 'sect', text: string) => Promise<import('./contracts').ChatMessage[]>
 }
 
 let connectPromise: Promise<void> | null = null
@@ -53,18 +58,20 @@ export const useOnline = create<OnlineState>((set, get) => ({
     set({ status: 'connecting', error: '' })
     connectPromise = (async () => {
       try {
-        const result = getSessionToken() ? await fetchWarfront() : (await guestLogin()).snapshot
+        const token = getSessionToken()
+        if (!token) {
+          set({ status: 'idle', snapshot: null, error: '' })
+          return
+        }
+        const result = await fetchWarfront()
         set({ status: 'online', snapshot: result, error: '' })
       } catch (error) {
         if (error instanceof OnlineApiError && error.status === 401) {
           clearSessionToken()
-          try {
-            const result = await guestLogin()
-            set({ status: 'online', snapshot: result.snapshot, error: '' })
-            return
-          } catch (retryError) { error = retryError }
+          set({ status: 'idle', snapshot: null, error: '登录已失效，请重新登录' })
+        } else {
+          set({ status: 'offline', error: error instanceof Error ? error.message : '无法连接多人服务器' })
         }
-        set({ status: 'offline', error: error instanceof Error ? error.message : '无法连接多人服务器' })
       } finally {
         finishMutation()
         connectPromise = null
@@ -120,6 +127,15 @@ export const useOnline = create<OnlineState>((set, get) => ({
       set({ error: error instanceof Error ? error.message : '行军下达失败' })
       return false
     } finally { finishMutation() }
+  },
+
+  preview: async (nodeKey, tactic, formation) => {
+    try {
+      return await previewWarfront({ nodeKey, tactic, formation })
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : '战力预览失败' })
+      return null
+    }
   },
 
   recruit: async () => {
@@ -274,4 +290,44 @@ export const useOnline = create<OnlineState>((set, get) => ({
   },
 
   clearReport: () => set({ lastReport: null }),
+
+  register: async (username: string, password: string, displayName: string) => {
+    try {
+      const result = await registerAccount({ username, password, displayName })
+      set({ status: 'online', snapshot: result.snapshot, error: '' })
+      return true
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : '注册失败' })
+      return false
+    }
+  },
+
+  loadChat: async (channel, after) => {
+    try {
+      return (await fetchChatMessages(channel, after)).messages
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : '聊天同步失败' })
+      return []
+    }
+  },
+
+  sendChat: async (channel, text) => {
+    try {
+      return (await sendChatMessage({ channel, text })).messages
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : '消息发送失败' })
+      return []
+    }
+  },
+
+  login: async (username: string, password: string) => {
+    try {
+      const result = await loginAccount({ username, password })
+      set({ status: 'online', snapshot: result.snapshot, error: '' })
+      return true
+    } catch (error) {
+      set({ error: error instanceof Error ? error.message : '登录失败' })
+      return false
+    }
+  },
 }))

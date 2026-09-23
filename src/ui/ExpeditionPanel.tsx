@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react'
 import { EXPEDITION_SEASON_REWARDS, EXPEDITION_SHOP, EXPEDITION_WEEKLY_REWARDS, expeditionTheme } from '../game/expedition'
 import { RESOURCE_META, TROOP_MAP } from '../game/data'
 import type { ExpeditionChoice, ExpeditionNodeKind, ExpeditionReport, ResourceKey } from '../game/types'
-import { battlePower, useGame } from '../game/store'
+import { useGame } from '../game/store'
 import { Formation } from './Formation'
 import { ExpeditionBattleScene } from './ExpeditionBattleScene'
 import { Sheet } from './Sheet'
@@ -33,7 +33,7 @@ export function ExpeditionPanel({ now }: { now: number }) {
   const [hint, setHint] = useState('')
   const [showStats, setShowStats] = useState(false)
 
-  useEffect(() => { refresh() }, [refresh])
+  useEffect(() => { void refresh() }, [refresh])
   useEffect(() => { maybeStartIntro('expedition') }, [maybeStartIntro])
 
   const available = useMemo(
@@ -58,9 +58,9 @@ export function ExpeditionPanel({ now }: { now: number }) {
     setHint('')
   }
 
-  const doExplore = () => {
+  const doExplore = async () => {
     if (!selected) return
-    const result = explore(selected.id, choice)
+    const result = await explore(selected.id, choice)
     if (!result.ok || !result.report) {
       setHint(result.reason ?? '暂时无法探索')
       return
@@ -158,7 +158,7 @@ export function ExpeditionPanel({ now }: { now: number }) {
           {selected.enemyPower > 0 && (
             <div className="expedition-threat">
               <span>敌方 {TROOP_MAP[selected.enemyTroop].name}</span>
-              <span>当前编队 {fmt(battlePower(s, selected.enemyTroop, now))}</span>
+            <span>当前编队 {fmt(s.derived.battlePowerByEnemy[selected.enemyTroop] ?? 0)}</span>
             </div>
           )}
 
@@ -197,7 +197,7 @@ export function ExpeditionPanel({ now }: { now: number }) {
                 need={item.need}
                 current={s.expeditionWeekScore}
                 claimed={s.expeditionWeeklyClaimed.includes(item.id)}
-                onClaim={() => { const result = claimWeekly(item.id); setHint(result.ok ? `已领取「${item.name}」` : result.reason ?? '') }}
+                onClaim={async () => { const result = await claimWeekly(item.id); setHint(result.ok ? `已领取「${item.name}」` : result.reason ?? '') }}
               />
             ))}
 
@@ -210,7 +210,7 @@ export function ExpeditionPanel({ now }: { now: number }) {
                 need={item.need}
                 current={s.expeditionScore}
                 claimed={s.expeditionSeasonRewards.includes(item.id)}
-                onClaim={() => { const result = claimSeason(item.id); setHint(result.ok ? `已领取「${item.name}」` : result.reason ?? '') }}
+                onClaim={async () => { const result = await claimSeason(item.id); setHint(result.ok ? `已领取「${item.name}」` : result.reason ?? '') }}
               />
             ))}
 
@@ -226,7 +226,7 @@ export function ExpeditionPanel({ now }: { now: number }) {
                       <small>{item.desc}</small>
                       <em>{item.cost} 远征币 · {bought}/{item.maxPurchases}</em>
                     </div>
-                    <button className="btn-sub" disabled={capped} onClick={() => { const result = buyShop(item.id); setHint(result.ok ? `已兑换「${item.name}」` : result.reason ?? '') }}>
+                    <button className="btn-sub" disabled={capped} onClick={async () => { const result = await buyShop(item.id); setHint(result.ok ? `已兑换「${item.name}」` : result.reason ?? '') }}>
                       {capped ? '已满' : '兑换'}
                     </button>
                   </div>

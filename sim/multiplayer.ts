@@ -44,16 +44,15 @@ try {
     method: 'POST', body: JSON.stringify({ profile: strongerProfile }),
   }, a.token)
   const synced = syncedResponse.snapshot
-  assert(synced.player.battlePower > a.snapshot.player.battlePower, '洞府养成档案同步后，服务器战力必须上升')
-  assert.equal(synced.battleProfile.realm, 4, '服务器应返回标准化后的境界档案')
+  assert.equal(synced.player.battlePower, a.snapshot.player.battlePower, '伪造洞府养成档案不能改变服务器战力')
+  assert.equal(synced.battleProfile.realm, a.snapshot.battleProfile.realm, '服务器必须从真实洞府存档生成境界档案')
+  assert.deepEqual(synced.battleProfile.troops, a.snapshot.battleProfile.troops, '服务器必须从真实洞府存档生成兵力档案')
   const invalidProfile = await fetch(`${base}/api/profile/battle`, {
     method: 'POST', headers: { 'content-type': 'application/json', authorization: `Bearer ${a.token}` },
     body: JSON.stringify({ profile: { ...strongerProfile, realm: 999 } }),
   })
-  assert.equal(invalidProfile.status, 400, '越界成长档案必须由服务端拒绝')
-  await json<{ snapshot: WarfrontSnapshot }>('/api/profile/battle', {
-    method: 'POST', body: JSON.stringify({ profile: { ...strongerProfile, troops: { ...b.snapshot.battleProfile.troops } } }),
-  }, b.token)
+  assert.equal(invalidProfile.status, 200, '兼容同步接口应忽略客户端成长档案，而不是把它写入服务器')
+  const actualProfile = synced.battleProfile
 
   const onlineDirectory = await json<{ players: { id: string; online: boolean }[] }>('/api/social/players?online=1', {}, a.token)
   assert.equal(onlineDirectory.players.find(player => player.id === b.snapshot.player.id)?.online, true, '在线目录必须返回乙方')
@@ -94,8 +93,8 @@ try {
   }
   const first = await json<{ snapshot: WarfrontSnapshot; report: { id: string; win: boolean; myPower: number; losses: number } }>('/api/warfront/attack', { method: 'POST', body: JSON.stringify(attackA) }, a.token)
   assert.equal(first.report.win, true, '甲方应攻下迷雾关')
-  assert(first.report.myPower > 1500, '战报战力必须使用同步后的境界/修士/功法/法宝加成')
-  assert.equal(first.report.myPower, Math.round(battlePowerFromBattleProfile(strongerProfile, attackA.formation, 'yushou')), '前端共享公式与服务端战报必须一致')
+  assert(first.report.myPower >= 1500, '战报战力必须使用服务器洞府存档重新计算')
+  assert.equal(first.report.myPower, Math.round(battlePowerFromBattleProfile(actualProfile, attackA.formation, 'yushou')), '服务器战报必须与服务器快照档案一致')
   assert.equal(first.snapshot.player.troops.kuilei, 20, '立即结算胜利后，留在据点的存活部队不能继续留在个人兵力里')
   assert(first.snapshot.warfrontIncome.lingshi > 0, '占领据点后快照必须返回持续资源收益')
   const troopsAfterFirst = first.snapshot.player.troops.kuilei

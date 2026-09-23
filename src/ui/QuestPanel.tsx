@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { GUIDE_CHAPTERS, chapterProgress, currentGuide } from '../game/guide'
 import type { GuideRoute } from '../game/guide'
-import { QUESTS, questReward } from '../game/quests'
+import { QUESTS } from '../game/quests'
 import { RESOURCE_META } from '../game/data'
 import type { ResourceKey } from '../game/types'
 import { useGame } from '../game/store'
@@ -16,7 +16,7 @@ export function QuestPanel({ onGo }: QuestPanelProps) {
   const state = useGame()
   const claim = useGame(x => x.claimQuest)
   const [hint, setHint] = useState('')
-  const guide = currentGuide(state)
+  const guide = currentGuide(state, Date.now(), state.derived)
 
   return (
     <div className="guide-panel">
@@ -36,7 +36,7 @@ export function QuestPanel({ onGo }: QuestPanelProps) {
       </div>
 
       {GUIDE_CHAPTERS.map(chapter => {
-        const progress = chapterProgress(chapter, state)
+        const progress = chapterProgress(chapter, state, state.derived)
         const active = chapter.id === guide.chapter.id
         const quests = chapter.questIds.map(id => QUESTS.find(quest => quest.id === id)).filter(item => !!item)
         return (
@@ -47,10 +47,13 @@ export function QuestPanel({ onGo }: QuestPanelProps) {
             </summary>
             <div className="guide-chapter-copy">{chapter.why}</div>
             {quests.map(quest => {
-              const claimed = state.claimedQuests.includes(quest!.id)
-              const done = quest!.done(state)
-              const progressValue = quest!.progress?.(state)
-              const reward = questReward(state, quest!)
+              const detail = state.derived.questDetails[quest!.id]
+              const claimed = detail?.claimed ?? state.claimedQuests.includes(quest!.id)
+              const done = detail?.done ?? false
+              const progressValue = detail?.current !== null && detail?.target !== null && detail
+                ? { cur: detail.current, target: detail.target }
+                : undefined
+              const reward = detail?.reward ?? {}
               return (
                 <div className={'guide-quest' + (claimed ? ' claimed' : '') + (done && !claimed ? ' ready' : '')} key={quest!.id}>
                   <div className="guide-quest-copy">
@@ -63,8 +66,8 @@ export function QuestPanel({ onGo }: QuestPanelProps) {
                   </div>
                   {!claimed && <div className="guide-quest-actions">
                     {!done && <button className="btn-sub" type="button" onClick={() => onGo({ ...quest!.route, guideId: quest!.id })}>去做</button>}
-                    <button className="btn-sub" type="button" disabled={!done} onClick={() => {
-                      const result = claim(quest!.id)
+                    <button className="btn-sub" type="button" disabled={!done} onClick={async () => {
+                      const result = await claim(quest!.id)
                       setHint(result.ok ? `已领取「${quest!.name}」` : (result.reason ?? ''))
                     }}>{done ? '领取' : '未完成'}</button>
                   </div>}

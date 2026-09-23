@@ -1,5 +1,5 @@
 import type {
-  ApiError, AttackPayload, AttackResponse, CreateSectPayload, FriendRequestPayload, GarrisonPayload, GuestAuthResponse, GarrisonResponse, MarchPayload, MarchResponse, PlayerSearchResponse, RecruitResponse, RemoveFriendPayload, RenamePayload, RespondFriendRequestPayload, SyncBattleProfilePayload, SyncBattleProfileResponse, WarfrontSnapshot, WithdrawPayload, WithdrawResponse,
+  AccountAuthResponse, ApiError, AttackPayload, AttackResponse, ChatMessagesResponse, CreateSectPayload, FriendRequestPayload, GameCommandRequest, GameCommandResponse, GameSnapshot, GarrisonPayload, GuestAuthResponse, GarrisonResponse, LoginAccountPayload, MarchPayload, MarchResponse, PlayerSearchResponse, RecruitResponse, RegisterAccountPayload, RemoveFriendPayload, RenamePayload, RespondFriendRequestPayload, SendChatPayload, SyncBattleProfilePayload, SyncBattleProfileResponse, WarfrontPreview, WarfrontPreviewPayload, WarfrontSnapshot, WithdrawPayload, WithdrawResponse,
 } from './contracts'
 
 const TOKEN_KEY = 'fanren-slg-online-token-v1'
@@ -46,8 +46,38 @@ export async function guestLogin(displayName?: string): Promise<GuestAuthRespons
   return result
 }
 
+export async function registerAccount(payload: RegisterAccountPayload): Promise<AccountAuthResponse> {
+  const result = await request<AccountAuthResponse>('/api/auth/register', { method: 'POST', body: JSON.stringify(payload) }, null)
+  saveSessionToken(result.token)
+  return result
+}
+
+export async function loginAccount(payload: LoginAccountPayload): Promise<AccountAuthResponse> {
+  const result = await request<AccountAuthResponse>('/api/auth/login', { method: 'POST', body: JSON.stringify(payload) }, null)
+  saveSessionToken(result.token)
+  return result
+}
+
+export function fetchChatMessages(channel: 'world' | 'sect', after?: string): Promise<ChatMessagesResponse> {
+  const params = new URLSearchParams({ channel })
+  if (after) params.set('after', after)
+  return request(`/api/chat/messages?${params.toString()}`)
+}
+
+export function sendChatMessage(payload: SendChatPayload): Promise<ChatMessagesResponse> {
+  return request('/api/chat/messages', { method: 'POST', body: JSON.stringify(payload) })
+}
+
 export function fetchWarfront(): Promise<WarfrontSnapshot> {
   return request('/api/warfront')
+}
+
+export function fetchGameSnapshot(): Promise<GameSnapshot> {
+  return request('/api/game/snapshot')
+}
+
+export function sendGameCommand(payload: GameCommandRequest): Promise<GameCommandResponse> {
+  return request('/api/game/command', { method: 'POST', body: JSON.stringify(payload) })
 }
 
 export function attackWarfront(payload: AttackPayload): Promise<AttackResponse> {
@@ -56,6 +86,10 @@ export function attackWarfront(payload: AttackPayload): Promise<AttackResponse> 
 
 export function marchWarfront(payload: MarchPayload): Promise<MarchResponse> {
   return request('/api/warfront/march', { method: 'POST', body: JSON.stringify(payload) })
+}
+
+export function previewWarfront(payload: WarfrontPreviewPayload): Promise<WarfrontPreview> {
+  return request('/api/warfront/preview', { method: 'POST', body: JSON.stringify(payload) })
 }
 
 export function recruitSeasonTroops(): Promise<RecruitResponse> {

@@ -1,24 +1,20 @@
 import { useEffect, useRef } from 'react'
-import { RESOURCE_META, REALMS } from '../game/data'
+import { RESOURCE_META } from '../game/data'
 import type { ResourceKey } from '../game/types'
-import { useGame, computeRates, currentCap } from '../game/store'
-import { characterName, cultivationRequirement } from '../game/seek'
+import { useGame } from '../game/store'
+import { characterName } from '../game/seek'
 import { sprite, fmt, useCountUp } from './util'
 
 export function TopBar({ onBreakthrough }: { onBreakthrough: () => void }) {
   const s = useGame()
   const floats = useGame(x => x.floats)
   const popFloat = useGame(x => x.popFloat)
-  const rates = computeRates(s)
-  const cap = currentCap(s)
-  const realm = REALMS[Math.min(s.realm, REALMS.length - 1)]
-  const next = REALMS[s.realm + 1]
-  const insightNeed = cultivationRequirement(s.realm)
-
-  const gateOk = !!next && s.buildings.dongfu.level >= next.requiresDongfu
-  const canBreak = !!next && gateOk
-    && s.seek.cultivation >= insightNeed
-    && (Object.keys(next.cost) as ResourceKey[]).every(k => s.resources[k] >= (next.cost[k] ?? 0))
+  const rates = s.derived.rates
+  const cap = s.derived.storageCap
+  const realm = s.derived.realm
+  const next = realm.next
+  const insightNeed = realm.cultivationNeed
+  const canBreak = realm.canBreakthrough
 
   return (
     <>
@@ -42,10 +38,10 @@ export function TopBar({ onBreakthrough }: { onBreakthrough: () => void }) {
           <span>{characterName(s.character.gender)}</span>
         </div>
         <div>
-          <div className="realm-name">{realm.name}</div>
-          <div className="realm-sub">
-            产出 ×{realm.outputBonus.toFixed(2)} · 战力 ×{realm.powerBonus.toFixed(2)}
-            {' · 修为 '}{fmt(s.seek.cultivation)}/{fmt(insightNeed)}
+            <div className="realm-name">{realm.currentName}</div>
+            <div className="realm-sub">
+            产出 ×{realm.currentOutputBonus.toFixed(2)} · 战力 ×{realm.currentPowerBonus.toFixed(2)}
+            {' · 修为 '}{fmt(realm.cultivation)}/{fmt(insightNeed)}
           </div>
         </div>
         <button

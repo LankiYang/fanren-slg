@@ -1,12 +1,7 @@
 import { useState } from 'react'
-import { BUILDING_MAP, buildingCost, buildingOutput, buildingTime } from '../game/data'
+import { BUILDING_MAP } from '../game/data'
 import type { BuildingKey } from '../game/types'
-import {
-  useGame, realmOutputBonus, busyQueues, dongfuPrereqStatus, currentCap,
-  buildCostFactor, buildSpeedFactor,
-} from '../game/store'
-import { scaleCost } from '../game/compute'
-import { troopCap, TUNE } from '../game/balance'
+import { useGame } from '../game/store'
 import { Sheet, Cost } from './Sheet'
 import { GongfaPanel, PillPanel, ArtifactPanel } from './FunctionPanels'
 import { fmtTime, fmt } from './util'
@@ -28,21 +23,17 @@ export function BuildingPanel({ bkey, now, onClose }: { bkey: BuildingKey; now: 
 
   const def = BUILDING_MAP[bkey]
   const b = s.buildings[bkey]
-  const target = b.level + 1
-  // 显示的必须是实际要付/要等的数（含功法减免与丹药加速），
-  // 否则面板上写的和真正扣的对不上
-  const cost = scaleCost(buildingCost(bkey, target), buildCostFactor(s))
-  const duration = buildingTime(bkey, target) * buildSpeedFactor(s, now)
-  const discounted = buildCostFactor(s) < 1 || buildSpeedFactor(s, now) < 1
-  const busy = b.upgradingUntil !== null && now < b.upgradingUntil
-  const done = b.upgradingUntil !== null && now >= b.upgradingUntil
-  const locked = b.level === 0 && s.buildings.dongfu.level < def.unlockAt
-  const atMax = bkey === 'dongfu' && b.level >= TUNE.dongfuMax
-  const cappedByDongfu = bkey !== 'dongfu' && b.level >= s.buildings.dongfu.level
-  const prereq = bkey === 'dongfu' ? dongfuPrereqStatus(s) : null
-  const queueFull = busyQueues(s, now) >= s.queueSlots
-
-  const bonus = realmOutputBonus(s.realm)
+  const detail = s.derived.buildingDetails[bkey]
+  const target = detail?.targetLevel ?? b.level + 1
+  const cost = detail?.cost ?? {}
+  const duration = detail?.durationMs ?? 0
+  const busy = detail?.busy ?? false
+  const done = detail?.done ?? false
+  const locked = detail?.locked ?? false
+  const atMax = detail?.atMax ?? false
+  const cappedByDongfu = detail?.cappedByDongfu ?? false
+  const prereq = detail?.prerequisite ?? null
+  const queueFull = detail?.queueFull ?? false
 
   return (
     <Sheet
@@ -85,11 +76,11 @@ export function BuildingPanel({ bkey, now, onClose }: { bkey: BuildingKey; now: 
           <div className="card-body">
             <div className="card-name">产出</div>
             <div className="card-meta">
-              当前 {(buildingOutput(b.level) * bonus).toFixed(2)}/s
-              {' → '}
-              <span style={{ color: 'var(--teal)' }}>
-                {(buildingOutput(target) * bonus).toFixed(2)}/s
-              </span>
+              当前 {(detail?.currentOutput ?? 0).toFixed(2)}/s
+              {detail?.nextOutput !== null && detail?.nextOutput !== undefined && <>
+                {' → '}
+                <span style={{ color: 'var(--teal)' }}>{detail.nextOutput.toFixed(2)}/s</span>
+              </>}
             </div>
           </div>
         </div>
@@ -99,8 +90,8 @@ export function BuildingPanel({ bkey, now, onClose }: { bkey: BuildingKey; now: 
           <div className="card-body">
             <div className="card-name">仓库上限</div>
             <div className="card-meta">
-              当前 {fmt(currentCap(s))}
-              {!atMax && <> → <span style={{ color: 'var(--teal)' }}>{fmt(currentCap({ ...s, buildings: { ...s.buildings, dongfu: { ...b, level: target } } }))}</span></>}
+              当前 {fmt(detail?.currentStorageCap ?? 0)}
+              {!atMax && detail?.nextStorageCap !== null && detail?.nextStorageCap !== undefined && <> → <span style={{ color: 'var(--teal)' }}>{fmt(detail.nextStorageCap)}</span></>}
               <br />
               同时解除其余建筑的等级封顶
             </div>
@@ -112,16 +103,16 @@ export function BuildingPanel({ bkey, now, onClose }: { bkey: BuildingKey; now: 
           <div className="card-body">
             <div className="card-name">兵力上限</div>
             <div className="card-meta">
-              当前 {fmt(troopCap(b.level))}
+              当前 {fmt(detail?.currentTroopCap ?? 0)}
               {' → '}
-              <span style={{ color: 'var(--teal)' }}>{fmt(troopCap(target))}</span>
+              <span style={{ color: 'var(--teal)' }}>{fmt(detail?.nextTroopCap ?? 0)}</span>
             </div>
           </div>
         </div>
       )}
 
       {done ? (
-        <button className="btn-main" onClick={() => { finishUpgrade(bkey); onClose() }}>
+        <button className="btn-main" onClick={async () => { const result = await finishUpgrade(bkey); if (result.ok) onClose(); else setHint(result.reason ?? '升级尚未完成') }}>
           完成升级
         </button>
       ) : busy ? (
@@ -134,7 +125,6 @@ export function BuildingPanel({ bkey, now, onClose }: { bkey: BuildingKey; now: 
         <>
           <div className="section-title">
             升级至 {target} 级 · 耗时 {fmtTime(duration)}
-            {discounted && <span style={{ color: 'var(--teal)' }}> （已含功法/丹药加成）</span>}
           </div>
           <Cost cost={cost} have={s.resources} />
 
@@ -155,8 +145,8 @@ export function BuildingPanel({ bkey, now, onClose }: { bkey: BuildingKey; now: 
             className="btn-main"
             data-tut="upgrade-btn"
             disabled={locked || cappedByDongfu || (prereq ? !prereq.ok : false) || queueFull}
-            onClick={() => {
-              const r = startUpgrade(bkey)
+            onClick={async () => {
+              const r = await startUpgrade(bkey)
               if (!r.ok) setHint(r.reason ?? '无法升级')
               else onClose()
             }}

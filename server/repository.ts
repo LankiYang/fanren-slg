@@ -4,6 +4,7 @@ import type { ServerState } from './model'
 import { WARFRONT_NODE_MAP, WARFRONT_NODES, WARFRONT_SPAWN_POINTS } from '../src/game/warfront'
 import { defaultBattleProfile } from '../src/game/compute'
 import { ensureBots, reassignHumansOutOfAiSect } from './domain'
+import { hydrateGameState } from './gameDomain'
 
 const DEFAULT_PATH = resolve(process.cwd(), 'server/data/state.json')
 
@@ -26,7 +27,7 @@ export function createInitialState(): ServerState {
     { id: 'sect-liuyun', name: '流云会' },
   ]
   const state: ServerState = {
-    schemaVersion: 4,
+    schemaVersion: 5,
     seasonId: 's1-cangwu',
     seasonName: '第 1 赛季 · 苍梧秘境',
     playerSequence: 0,
@@ -46,6 +47,9 @@ export function createInitialState(): ServerState {
     idempotency: {},
     friendRequests: {},
     friendships: {},
+    accounts: {},
+    sessions: {},
+    chatMessages: [],
   }
   // 苍梧宗常驻电脑玩家，保证没有真人同场时战区也不是一张死地图。
   ensureBots(state)
@@ -63,7 +67,7 @@ export class JsonRepository implements StateRepository {
     if (this.state) return this.state
     try {
       const parsed = JSON.parse(await readFile(this.filePath, 'utf8')) as ServerState
-      if (parsed.schemaVersion !== 1 && parsed.schemaVersion !== 2 && parsed.schemaVersion !== 3 && parsed.schemaVersion !== 4) throw new Error('unsupported schema')
+      if (parsed.schemaVersion !== 1 && parsed.schemaVersion !== 2 && parsed.schemaVersion !== 3 && parsed.schemaVersion !== 4 && parsed.schemaVersion !== 5) throw new Error('unsupported schema')
       this.state = hydrateState(parsed)
     } catch (error) {
       const code = (error as NodeJS.ErrnoException).code
@@ -76,8 +80,12 @@ export class JsonRepository implements StateRepository {
 
   async mutate<T>(fn: (state: ServerState) => T | Promise<T>): Promise<T> {
     const operation = this.mutationQueue.then(async () => {
-      const state = await this.load()
+      const current = await this.load()
+      // 领域函数会先推进离线收益，再校验命令。JSON fallback 也必须具备和
+      // PostgreSQL 事务一致的失败回滚语义，不能让一个 400 请求把内存状态推进了。
+      const state = structuredClone(current) as ServerState
       const result = await fn(state)
+      this.state = state
       await this.save()
       return result
     })
@@ -127,7 +135,7 @@ async function renameWithRetry(from: string, to: string, attempts = 8): Promise<
 }
 
 export function hydrateState(state: ServerState): ServerState {
-  state.schemaVersion = 4
+  state.schemaVersion = 5
   for (const player of Object.values(state.players)) {
     player.warEnergy = Number.isFinite(player.warEnergy) ? player.warEnergy : 3
     player.warEnergyUpdatedAt = Number.isFinite(player.warEnergyUpdatedAt) ? player.warEnergyUpdatedAt : Date.now()
@@ -135,11 +143,21 @@ export function hydrateState(state: ServerState): ServerState {
       ? player.mapPosition
       : { ...(WARFRONT_SPAWN_POINTS[player.sectId as keyof typeof WARFRONT_SPAWN_POINTS] ?? WARFRONT_SPAWN_POINTS['sect-liuyun']) }
     player.march = player.march ?? null
+    const legacyTroops = normalizeTroops(player.troops)
+    const hadGame = Boolean(player.game && typeof player.game === 'object')
     player.battleProfile = player.battleProfile ?? defaultBattleProfile()
     player.profileUpdatedAt = Number.isFinite(player.profileUpdatedAt) ? player.profileUpdatedAt : 0
     player.lastSeenAt = Number.isFinite(player.lastSeenAt) ? player.lastSeenAt : 0
     player.isBot = player.isBot ?? false
     player.nextActionAt = Number.isFinite(player.nextActionAt) ? player.nextActionAt : 0
+    player.game = hydrateGameState(player.game)
+    // v4 及更早版本把战区兵力单独存放；首次读取时迁移到洞府权威存档。
+    // 若此前的过渡版本已经创建了空 game.troops，而旧镜像仍有兵，也按旧镜像补齐。
+    if (!hadGame || (sumTroops(player.game.troops) === 0 && sumTroops(legacyTroops) > 0)) {
+      player.game.troops = legacyTroops
+    }
+    player.troops = { ...player.game.troops }
+    player.gameIdempotency = player.gameIdempotency ?? {}
     if (player.march && (!Array.isArray(player.march.path) || player.march.path.length < 2)) {
       player.march.path = [player.march.from, WARFRONT_NODE_MAP[player.march.destinationKey]?.position ?? player.march.from]
     }
@@ -153,8 +171,28 @@ export function hydrateState(state: ServerState): ServerState {
   state.idempotency = state.idempotency ?? {}
   state.friendRequests = state.friendRequests ?? {}
   state.friendships = state.friendships ?? {}
+  state.accounts = state.accounts ?? {}
+  state.sessions = state.sessions ?? {}
+  state.chatMessages = Array.isArray(state.chatMessages) ? state.chatMessages.slice(-500) : []
   // 老存档可能在 AI 宗门加入前就有真人落在这个宗门里，先迁走再补齐机器人。
   reassignHumansOutOfAiSect(state)
   ensureBots(state)
   return state
+}
+
+function normalizeTroops(value: unknown): { kuilei: number; yushou: number; fuxiu: number } {
+  const input = value && typeof value === 'object' ? value as Record<string, unknown> : {}
+  return {
+    kuilei: safeTroop(input.kuilei),
+    yushou: safeTroop(input.yushou),
+    fuxiu: safeTroop(input.fuxiu),
+  }
+}
+
+function safeTroop(value: unknown): number {
+  return Number.isFinite(value) ? Math.max(0, Math.floor(Number(value))) : 0
+}
+
+function sumTroops(value: { kuilei: number; yushou: number; fuxiu: number }): number {
+  return value.kuilei + value.yushou + value.fuxiu
 }

@@ -1,8 +1,7 @@
 import { useEffect, useState } from 'react'
 import { STAGES, TROOP_MAP, RESOURCE_META } from '../game/data'
 import type { ResourceKey, TroopKey } from '../game/types'
-import { useGame, battlePower } from '../game/store'
-import { formationUsed, optimalFormation } from '../game/compute'
+import { useGame } from '../game/store'
 import { Formation } from './Formation'
 import { PracticeBattleScene } from './PracticeBattleScene'
 import { PracticePurpose } from './PracticeGuide'
@@ -39,7 +38,7 @@ export function StagePanel() {
 
   if (staging !== null) {
     const st = STAGES.find(x => x.id === staging)!
-    const my = battlePower(s, st.enemyTroop)
+    const my = s.derived.stagePower[String(st.id)] ?? 0
     const win = my >= st.enemyPower
     return (
       <div>
@@ -73,9 +72,9 @@ export function StagePanel() {
         <button
           className="btn-main"
           data-tut="stage-challenge-confirm"
-          disabled={formationUsed(s) <= 0}
-          onClick={() => {
-            const r = challenge(st.id)
+          disabled={s.derived.formationUsed <= 0}
+          onClick={async () => {
+            const r = await challenge(st.id)
             if (r.ok) {
               setReport({
                 name: st.name,
@@ -133,7 +132,7 @@ export function StagePanel() {
           {inChapter.map(st => {
             const cleared = s.clearedStage >= st.id
             const open = st.id <= s.clearedStage + 1
-            const my = battlePower(s, st.enemyTroop)
+            const my = s.derived.stagePower[String(st.id)] ?? 0
             return (
               <div className={'card' + (open ? '' : ' locked-card')} key={st.id}>
                 <img className="thumb" src={sprite(st.sprite)} alt="" />
@@ -169,11 +168,11 @@ export function StagePanel() {
                     className="btn-sub"
                     data-tut={open && st.id === s.clearedStage + 1 ? 'stage-challenge' : undefined}
                     disabled={!open}
-                    onClick={() => {
+                    onClick={async () => {
                       // 首次进入（编队为空）自动填一套择优编队，
                       // 免得玩家面对三个归零的滑杆不知所措
-                      if (formationUsed(s) === 0) {
-                        setFormation(optimalFormation(s, st.enemyTroop))
+                      if (s.derived.formationUsed === 0) {
+                        await setFormation(s.derived.recommendedFormationByEnemy[st.enemyTroop] ?? { kuilei: 0, yushou: 0, fuxiu: 0 })
                       }
                       setStaging(st.id)
                     }}

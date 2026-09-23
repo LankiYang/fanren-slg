@@ -27,6 +27,8 @@ export function FriendPanel({ snapshot }: FriendPanelProps) {
 
   useEffect(() => {
     void loadOnlinePlayers()
+    const timer = window.setInterval(() => void loadOnlinePlayers(), 5000)
+    return () => window.clearInterval(timer)
   }, [loadOnlinePlayers, snapshot.player.id])
 
   useEffect(() => {

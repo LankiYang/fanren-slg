@@ -1,8 +1,10 @@
 import { createServer, type IncomingMessage, type ServerResponse } from 'node:http'
-import type { AttackPayload, CreateSectPayload, FriendRequestPayload, GarrisonPayload, MarchPayload, RemoveFriendPayload, RenamePayload, RespondFriendRequestPayload, SyncBattleProfilePayload, WithdrawPayload } from '../src/online/contracts'
-import { attack, authenticate, createGuest, createSect, createSnapshot, DomainError, garrison, joinSect, march, recruit, removeFriend, renamePlayer, respondFriendRequest, searchPlayers, sendFriendRequest, syncBattleProfile, withdrawGarrison } from './domain'
+import type { AttackPayload, CreateSectPayload, FriendRequestPayload, GameCommandRequest, GarrisonPayload, LoginAccountPayload, MarchPayload, RegisterAccountPayload, RemoveFriendPayload, RenamePayload, RespondFriendRequestPayload, SendChatPayload, SyncBattleProfilePayload, WarfrontPreviewPayload, WithdrawPayload } from '../src/online/contracts'
+import { attack, authenticate, chatMessages, createGuest, createSession, createSect, createSnapshot, DomainError, gameCommand, gameSnapshot, garrison, joinSect, loginAccount, march, previewWarfront, recruit, registerAccount, removeFriend, renamePlayer, respondFriendRequest, searchPlayers, sendChatMessage, sendFriendRequest, syncBattleProfile, withdrawGarrison } from './domain'
 import { createRepository } from './repositoryFactory'
 import type { StateRepository } from './repository'
+
+type ChatChannel = 'world' | 'sect'
 
 function send(res: ServerResponse, status: number, body: unknown) {
   res.writeHead(status, {
@@ -49,6 +51,49 @@ export async function startApiServer(port = Number(process.env.FANREN_API_PORT |
         return await commitAndSend(repository, res, 201, state => {
           const player = createGuest(state, body.displayName)
           return { token: player.token, snapshot: createSnapshot(state, player) }
+        })
+      }
+      if (req.method === 'POST' && url.pathname === '/api/auth/register') {
+        const body = await readJson<RegisterAccountPayload>(req)
+        return await commitAndSend(repository, res, 201, state => {
+          const created = registerAccount(state, body.username, body.password, body.displayName)
+          const token = createSession(state, created.account, created.player)
+          return { token, account: { id: created.account.id, username: created.account.username, playerId: created.account.playerId }, snapshot: createSnapshot(state, created.player) }
+        })
+      }
+      if (req.method === 'POST' && url.pathname === '/api/auth/login') {
+        const body = await readJson<LoginAccountPayload>(req)
+        return await commitAndSend(repository, res, 200, state => {
+          const result = loginAccount(state, body.username, body.password)
+          return { token: result.token, account: { id: result.account.id, username: result.account.username, playerId: result.account.playerId }, snapshot: createSnapshot(state, result.player) }
+        })
+      }
+      if (req.method === 'GET' && url.pathname === '/api/chat/messages') {
+        return await commitAndSend(repository, res, 200, state => {
+          const player = authenticate(state, tokenOf(req))
+          const channel = url.searchParams.get('channel') as ChatChannel
+          return { messages: chatMessages(state, player, channel, url.searchParams.get('after') ?? undefined), serverTime: Date.now() }
+        })
+      }
+      if (req.method === 'POST' && url.pathname === '/api/chat/messages') {
+        const body = await readJson<SendChatPayload>(req)
+        return await commitAndSend(repository, res, 200, state => {
+          const player = authenticate(state, tokenOf(req))
+          return { messages: sendChatMessage(state, player, body.channel, body.text), serverTime: Date.now() }
+        })
+      }
+      if (req.method === 'GET' && url.pathname === '/api/game/snapshot') {
+        return await commitAndSend(repository, res, 200, state => {
+          const player = authenticate(state, tokenOf(req))
+          return gameSnapshot(state, player)
+        })
+      }
+      if (req.method === 'POST' && url.pathname === '/api/game/command') {
+        const body = await readJson<GameCommandRequest>(req)
+        return await commitAndSend(repository, res, 200, state => {
+          const player = authenticate(state, tokenOf(req))
+          if (!body || typeof body.command !== 'string') throw new DomainError('缺少游戏命令')
+          return gameCommand(state, player, body.command, body.payload, body.requestId)
         })
       }
       if (req.method === 'GET' && url.pathname === '/api/social/players') {
@@ -117,6 +162,13 @@ export async function startApiServer(port = Number(process.env.FANREN_API_PORT |
           const player = authenticate(state, tokenOf(req))
           march(state, player, body)
           return { snapshot: createSnapshot(state, player) }
+        })
+      }
+      if (req.method === 'POST' && url.pathname === '/api/warfront/preview') {
+        const body = await readJson<WarfrontPreviewPayload>(req)
+        return await commitAndSend(repository, res, 200, state => {
+          const player = authenticate(state, tokenOf(req))
+          return previewWarfront(state, player, body)
         })
       }
       if (req.method === 'POST' && url.pathname === '/api/warfront/recruit') {

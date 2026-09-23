@@ -1,8 +1,8 @@
 import { useEffect, useState } from 'react'
 import { RESOURCE_META } from '../game/data'
-import { BOSS, bossHp } from '../game/balance'
+import { BOSS } from '../game/balance'
 import type { BossReport, ResourceKey } from '../game/types'
-import { useGame, totalPower } from '../game/store'
+import { useGame } from '../game/store'
 import { useRevealSequence, ImpactFlash } from './BattleFx'
 import { sprite, fmt, fmtTime, useCountUp } from './util'
 
@@ -19,10 +19,10 @@ export function SectPanel({ now }: { now: number }) {
   const built = s.buildings.zongmen.level > 0
 
   useEffect(() => { if (built) maybeStartIntro('sect') }, [built, maybeStartIntro])
-  const readyAt = bossReadyAt()
+  const readyAt = s.derived.boss.readyAt || bossReadyAt()
   const onCooldown = now < readyAt
-  const hp = bossHp(s.buildings.dongfu.level)
-  const mine = totalPower(s)
+  const hp = s.derived.boss.hp
+  const mine = s.derived.boss.myPower
 
   if (report) {
     return <BossReportView report={report} onClose={() => setReport(null)} />
@@ -55,8 +55,8 @@ export function SectPanel({ now }: { now: number }) {
         className="btn-main"
         data-tut="boss-challenge"
         disabled={!built || onCooldown}
-        onClick={() => {
-          const r = challengeBoss()
+        onClick={async () => {
+          const r = await challengeBoss()
           if (r.ok && r.report) setReport(r.report)
           else setHint(r.reason ?? '')
         }}
@@ -79,8 +79,8 @@ export function SectPanel({ now }: { now: number }) {
           <button
             className="btn-sub"
             disabled={s.queueSlots >= 2}
-            onClick={() => {
-              const r = unlockQueue()
+            onClick={async () => {
+              const r = await unlockQueue()
               setHint(r.ok ? '已开辟第二条建造队列' : (r.reason ?? ''))
             }}
           >

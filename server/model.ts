@@ -1,4 +1,4 @@
-import type { BattleProfile, TroopKey, WarfrontTactic } from '../src/game/types'
+import type { BattleProfile, GameState, OfflineReport, TroopKey, WarfrontTactic } from '../src/game/types'
 import type { MapPoint, OnlineBattleReport } from '../src/online/contracts'
 
 export interface ServerMarch {
@@ -20,6 +20,10 @@ export interface ServerPlayer {
   name: string
   sectId: string
   score: number
+  /**
+   * 旧战区聚合字段，仅作为旧 JSON/接口兼容镜像；真实兵力统一存于 game.troops。
+   * 新代码不得直接修改此字段。
+   */
   troops: Record<TroopKey, number>
   cooldownUntil: number
   recruitReadyAt: number
@@ -36,6 +40,10 @@ export interface ServerPlayer {
   isBot: boolean
   /** 机器人下一次可以行动的时间戳；真人玩家恒为 0，不参与任何判断。 */
   nextActionAt: number
+  /** 洞府、养成、PvE 与远征的服务端权威存档。 */
+  game: GameState
+  /** 游戏命令幂等结果；防止网络重试重复发放奖励。 */
+  gameIdempotency: Record<string, { result: Record<string, unknown>; offlineReport: OfflineReport | null }>
 }
 
 export interface ServerFriendRequest {
@@ -49,6 +57,40 @@ export interface ServerFriendRequest {
 export interface ServerFriendship {
   playerA: string
   playerB: string
+  createdAt: number
+}
+
+export interface ServerAccount {
+  id: string
+  username: string
+  normalizedUsername: string
+  passwordHash: string
+  passwordSalt: string
+  playerId: string
+  createdAt: number
+  lastLoginAt: number
+}
+
+export interface ServerSession {
+  token: string
+  accountId: string
+  playerId: string
+  createdAt: number
+  expiresAt: number
+  lastSeenAt: number
+}
+
+export type ChatChannel = 'world' | 'sect'
+
+export interface ServerChatMessage {
+  id: string
+  channel: ChatChannel
+  senderId: string
+  senderName: string
+  sectId: string
+  sectName: string
+  text: string
+  command: { kind: string; args: string[] } | null
   createdAt: number
 }
 
@@ -82,4 +124,7 @@ export interface ServerState {
   idempotency: Record<string, string>
   friendRequests: Record<string, ServerFriendRequest>
   friendships: Record<string, ServerFriendship>
+  accounts: Record<string, ServerAccount>
+  sessions: Record<string, ServerSession>
+  chatMessages: ServerChatMessage[]
 }

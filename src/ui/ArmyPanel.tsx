@@ -1,9 +1,6 @@
 import { useEffect, useState } from 'react'
-import { TROOPS, TROOP_MAP, CULTIVATORS, cultivatorCost, cultivatorBonus, CULTIVATOR_MAX_LEVEL } from '../game/data'
-import type { Resources } from '../game/types'
-import {
-  useGame, troopPower, totalPower, currentTroopCap, totalTroops,
-} from '../game/store'
+import { TROOPS, TROOP_MAP, CULTIVATORS } from '../game/data'
+import { useGame } from '../game/store'
 import { Cost } from './Sheet'
 import { sprite, fmt } from './util'
 import { PracticePurpose } from './PracticeGuide'
@@ -18,8 +15,8 @@ export function TroopList() {
   const [batch, setBatch] = useState<number | 'max'>(10)
 
   const yanwuLv = s.buildings.yanwu.level
-  const cap = currentTroopCap(s)
-  const have = totalTroops(s)
+  const cap = s.derived.troopCap
+  const have = s.derived.totalTroops
 
   useEffect(() => { if (yanwuLv > 0) maybeStartIntro('yanwu') }, [yanwuLv, maybeStartIntro])
 
@@ -27,7 +24,7 @@ export function TroopList() {
     <div>
       <PracticePurpose section="army" />
       <div className="section-title">
-        总战力 {fmt(totalPower(s))}
+        总战力 {fmt(s.derived.totalPower)}
         {yanwuLv === 0
           ? <span style={{ color: 'var(--danger)' }}> · 需先兴建演武场</span>
           : <> · 兵力 {fmt(have)}/{fmt(cap)}</>}
@@ -52,11 +49,10 @@ export function TroopList() {
       </div>
 
       {TROOPS.map(t => {
-        const maxN = maxTrainable(t.key)
+        const detail = s.derived.troopDetails[t.key]
+        const maxN = detail?.maxTrainable ?? maxTrainable(t.key)
         const n = batch === 'max' ? maxN : batch
-        const cost = Object.fromEntries(
-          Object.entries(t.cost).map(([k, v]) => [k, (v ?? 0) * n]),
-        ) as Partial<Resources>
+        const cost = detail?.trainingCosts[String(n)] ?? detail?.trainingCost
         return (
           <div className="card" key={t.key}>
             <img className="thumb" src={sprite(t.sprite)} alt={t.name} />
@@ -70,7 +66,7 @@ export function TroopList() {
               <div className="card-meta">
                 {t.desc}
                 <br />
-                单位战力 {troopPower(s, t.key).toFixed(1)}
+                单位战力 {detail?.unitPower.toFixed(1) ?? '0.0'}
               </div>
               {n > 0 && <Cost cost={cost} have={s.resources} />}
             </div>
@@ -79,8 +75,8 @@ export function TroopList() {
                 className="btn-sub"
                 data-tut={t.key === 'kuilei' ? 'train-troop' : undefined}
                 disabled={yanwuLv === 0 || n <= 0}
-                onClick={() => {
-                  const r = trainTroop(t.key, n)
+                onClick={async () => {
+                  const r = await trainTroop(t.key, n)
                   setHint(r.ok ? `已训练 ${t.name} ×${n}` : (r.reason ?? ''))
                 }}
               >
@@ -125,9 +121,10 @@ export function CultivatorList() {
       <div className="section-title">修士 · 提升对应兵种战力</div>
       {CULTIVATORS.map(c => {
         const st = s.cultivators[c.key]
-        const owned = st?.owned
-        const maxed = owned && st.level >= CULTIVATOR_MAX_LEVEL
-        const cost = cultivatorCost((st?.level ?? 0) + 1)
+        const detail = s.derived.cultivatorDetails[c.key]
+        const owned = detail?.owned ?? st?.owned
+        const maxed = Boolean(detail && detail.level >= detail.maxLevel)
+        const cost = detail?.nextCost ?? {}
         return (
           <div className={'card' + (owned ? '' : ' locked-card')} key={c.key}>
             <img className="thumb" src={sprite(c.sprite)} alt={c.name} />
@@ -143,8 +140,8 @@ export function CultivatorList() {
                 <br />
                 {owned ? (
                   <>
-                    {st.level}/{CULTIVATOR_MAX_LEVEL} 级 · 专精 {TROOP_MAP[c.spec].name} · 生效于秘境/远征/战区
-                    {' +'}{(cultivatorBonus(c, st.level) * 100).toFixed(0)}%
+                    {detail?.level ?? st?.level ?? 0}/{detail?.maxLevel ?? 0} 级 · 专精 {TROOP_MAP[c.spec].name} · 生效于秘境/远征/战区
+                    {' +'}{(detail?.bonusPercent ?? 0).toFixed(0)}%
                   </>
                 ) : `尚未招募 · 通关对应秘境首领关可得 · 解锁后提升 ${TROOP_MAP[c.spec].name} 战力`}
               </div>
@@ -156,9 +153,9 @@ export function CultivatorList() {
                   className="btn-sub"
                   data-tut={c.key === 'hanli' ? 'cultivator-level' : undefined}
                   disabled={maxed}
-                  onClick={() => {
-                    const r = levelUp(c.key)
-                    setHint(r.ok ? `${c.name} 提升至 ${st.level + 1} 级` : (r.reason ?? ''))
+                  onClick={async () => {
+                    const r = await levelUp(c.key)
+                    setHint(r.ok ? `${c.name} 提升至 ${typeof r.level === 'number' ? r.level : '新等级'}` : (r.reason ?? ''))
                   }}
                 >
                   {maxed ? '已满级' : '提升'}
