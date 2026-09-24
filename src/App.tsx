@@ -21,13 +21,13 @@ import { CharacterSelect } from './ui/CharacterSelect'
 import { SeekPanel } from './ui/SeekPanel'
 import { AccountGate } from './ui/AccountGate'
 import { getSessionToken } from './online/api'
-import { useOnline } from './online/onlineStore'
 
 type Tab = 'home' | 'practice' | 'warfront' | 'sect'
 
 export default function App() {
   const connect = useGame(x => x.connect)
-  const onlineStatus = useOnline(x => x.status)
+  const gameReady = useGame(x => x.derived.storageCap > 0)
+  const gameConnectionError = useGame(x => x.connectionError)
   const tick = useGame(x => x.tick)
   const refreshExpedition = useGame(x => x.refreshExpedition)
   const breakthrough = useGame(x => x.breakthrough)
@@ -68,12 +68,22 @@ export default function App() {
 
   // 主循环：每 500ms 结算一次产出与升级完成
   useEffect(() => {
-    if (getSessionToken()) void connect()
+    if (getSessionToken() && !gameReady) void connect()
     const id = setInterval(() => { void tick(); void refreshExpedition(); setNow(Date.now()) }, 1000)
     return () => clearInterval(id)
-  }, [connect, refreshExpedition, tick])
+  }, [connect, gameReady, refreshExpedition, tick])
 
-  if (!getSessionToken() && onlineStatus !== 'online') return <AccountGate />
+  if (!getSessionToken()) return <AccountGate />
+  if (!gameReady) return (
+    <div className="app">
+      <div className="connection-state game-loading-state">
+        <div className="connection-rune">◎</div>
+        <b>{gameConnectionError ? '游戏存档同步失败' : '正在同步洞府存档…'}</b>
+        <span>{gameConnectionError || '请稍候，确认完成后即可进入修行界面。'}</span>
+        {gameConnectionError && <button className="btn-main" type="button" onClick={() => void connect()}>重新同步</button>}
+      </div>
+    </div>
+  )
 
   return (
     <div className="app">
@@ -83,6 +93,16 @@ export default function App() {
         {tab === 'warfront' ? (
           // 战区是玩家投入最重的系统，给它整屏空间而不是挤在 72% 高的弹层里。
           <WarfrontPanel now={now} />
+        ) : tab === 'practice' ? (
+          <div className="main-page-panel practice-page" aria-label="历练">
+            <div className="main-page-heading"><b>历练</b><span>演武 · 秘境 · 远征 · 修士</span></div>
+            <PracticePanel now={now} initialTab={practiceSection} />
+          </div>
+        ) : tab === 'sect' ? (
+          <div className="main-page-panel sect-page" aria-label="宗门">
+            <div className="main-page-heading"><b>宗门</b><span>合围妖兽 · 建造协作</span></div>
+            <SectPanel now={now} />
+          </div>
         ) : (
           <>
             <Scene now={now} onPick={k => setPicked(k)} />
@@ -94,7 +114,7 @@ export default function App() {
         )}
       </div>
 
-      <div className="tabbar">
+      <nav className="tabbar" aria-label="主导航">
         {([
           ['home', 'ui/tab-home.webp', '洞府'],
           ['practice', 'ui/tab-army.webp', '历练'],
@@ -104,6 +124,7 @@ export default function App() {
           <button
             key={k}
             className={'tab' + (tab === k ? ' on' : '')}
+            aria-current={tab === k ? 'page' : undefined}
             onClick={() => {
               // 底部导航切换时关闭建筑详情，避免多个 sheet 叠加遮挡目标页面。
               setPicked(null)
@@ -114,17 +135,10 @@ export default function App() {
             {label}
           </button>
         ))}
-      </div>
+      </nav>
 
       {picked && (
         <BuildingPanel bkey={picked} now={now} onClose={() => setPicked(null)} />
-      )}
-
-      {tab === 'practice' && (
-        <Sheet title="历练" sub="演武 · 秘境 · 远征 · 修士" onClose={() => setTab('home')}><PracticePanel now={now} initialTab={practiceSection} /></Sheet>
-      )}
-      {tab === 'sect' && (
-        <Sheet title="宗门" onClose={() => setTab('home')}><SectPanel now={now} /></Sheet>
       )}
 
       {showQuests && (
@@ -150,8 +164,8 @@ export default function App() {
       )}
 
       {/* 新手引导盖在最上层（跳过按钮在组件内部，需跟随对话框翻转） */}
-      <Tutorial />
-      <CharacterSelect />
+      {gameReady && <Tutorial />}
+      {gameReady && <CharacterSelect />}
     </div>
   )
 }

@@ -6,14 +6,7 @@ import { PracticeOverview, type PracticeSection } from './PracticeGuide'
 
 export type PracticeTab = PracticeSection
 
-const TABS: [PracticeTab, string][] = [
-  ['army', '演武'],
-  ['stage', '秘境'],
-  ['expedition', '远征'],
-  ['cultivator', '修士'],
-]
-
-/** 历练：演武/秘境/远征/修士的合并入口，四个系统心智上都是"备战出征"，收进一个 tab 内部切换，避免底部导航被塞满 */
+/** 历练：演武/秘境/远征/修士的合并入口，四个系统心智上都是"备战出征"；用途说明本身就是内部导航，避免同一组入口重复出现。 */
 export function PracticePanel({ now, initialTab = 'army' }: { now: number; initialTab?: PracticeTab }) {
   const [sub, setSub] = useState<PracticeTab>(initialTab)
 
@@ -22,21 +15,6 @@ export function PracticePanel({ now, initialTab = 'army' }: { now: number; initi
   return (
     <div className="practice-panel">
       <PracticeOverview active={sub} onSelect={setSub} />
-      <div className="practice-tabs" role="tablist" aria-label="历练分类">
-        {TABS.map(([key, label]) => (
-          <button
-            key={key}
-            role="tab"
-            aria-selected={sub === key}
-            data-tut={`practice-${key}`}
-            className={'practice-tab' + (sub === key ? ' on' : '')}
-            onClick={() => setSub(key)}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
-
       {sub === 'army' && <TroopList />}
       {sub === 'stage' && <StagePanel />}
       {sub === 'expedition' && <ExpeditionPanel now={now} />}

@@ -24,7 +24,6 @@ export function WarfrontPanel({ now }: { now: number }) {
   const [formation, setFormation] = useState<Record<TroopKey, number>>(EMPTY_FORMATION)
   const [preview, setPreview] = useState<WarfrontPreview | null>(null)
   const [working, setWorking] = useState(false)
-  const [sectName, setSectName] = useState('')
   const [garrisonDraft, setGarrisonDraft] = useState<Record<TroopKey, number>>(EMPTY_FORMATION)
   const [showFriends, setShowFriends] = useState(false)
   const [showDetails, setShowDetails] = useState(false)
@@ -56,12 +55,22 @@ export function WarfrontPanel({ now }: { now: number }) {
 
   useEffect(() => {
     if (!snapshot || !selectedState) return
+    const safeFormation = {
+      kuilei: Math.min(formation.kuilei, snapshot.player.troops.kuilei),
+      yushou: Math.min(formation.yushou, snapshot.player.troops.yushou),
+      fuxiu: Math.min(formation.fuxiu, snapshot.player.troops.fuxiu),
+    }
+    const changed = safeFormation.kuilei !== formation.kuilei
+      || safeFormation.yushou !== formation.yushou
+      || safeFormation.fuxiu !== formation.fuxiu
+    if (changed) setFormation(safeFormation)
+
     let disposed = false
     const timer = window.setTimeout(() => {
-      void useOnline.getState().preview(selectedKey, tactic, formation).then(next => {
+      void useOnline.getState().preview(selectedKey, tactic, safeFormation).then(next => {
         if (disposed || !next) return
         setPreview(next)
-        if (sum(formation) === 0) setFormation(next.recommendedFormation)
+        if (sum(safeFormation) === 0) setFormation(next.recommendedFormation)
       })
     }, 80)
     return () => { disposed = true; window.clearTimeout(timer) }
@@ -195,7 +204,6 @@ export function WarfrontPanel({ now }: { now: number }) {
           <div className="season-recruit"><span>兵损由服务端记录，征募用于补充赛季军团。</span><button className="btn-sub" disabled={now < snapshot.player.recruitReadyAt} onClick={() => void online.recruit()}>{now < snapshot.player.recruitReadyAt ? `${fmtTime(snapshot.player.recruitReadyAt - now)} 后征募` : '征募援军 +72'}</button></div>
           <Leaderboard title="宗门榜" rows={snapshot.sectLeaderboard} />
           <Leaderboard title="个人榜" rows={snapshot.playerLeaderboard} />
-          <SectManagement snapshot={snapshot} sectName={sectName} onNameChange={setSectName} />
           <div className="section-title">战报记录</div>
           <div className="online-reports">{snapshot.reports.length === 0 && <div className="card-meta">地图还没有交战记录。</div>}{snapshot.reports.slice(0, 5).map(report => report.kind === 'garrisonLoss'
             ? <div key={report.id}><b>据点失守</b> {report.attackerName} 攻破 {report.nodeName}<em>你的援军阵亡 {report.losses} 人</em></div>
@@ -228,11 +236,6 @@ function GarrisonPanel({ node, troops, draft, onDraftChange }: { node: OnlineNod
 }
 
 function Leaderboard({ title, rows }: { title: string; rows: { id: string; rank: number; name: string; score: number; isMine?: boolean }[] }) { return <><div className="section-title">{title}</div><div className="warfront-rank">{rows.slice(0, 5).map(row => <div className={row.isMine ? 'me' : ''} key={row.id}><span>{row.rank}</span><b>{row.name}{row.isMine ? '（我）' : ''}</b><em>{fmt(row.score)}</em></div>)}</div></> }
-
-function SectManagement({ snapshot, sectName, onNameChange }: { snapshot: NonNullable<ReturnType<typeof useOnline.getState>['snapshot']>; sectName: string; onNameChange: (name: string) => void }) {
-  const createSect = useOnline(x => x.createSect); const joinSect = useOnline(x => x.joinSect); const error = useOnline(x => x.error); const [working, setWorking] = useState(false); const otherSects = snapshot.sectLeaderboard.filter(row => row.id !== snapshot.player.sectId)
-  return <><div className="section-title">宗门协同</div><div className="sect-management"><div className="sect-management-current"><b>{snapshot.player.sectName}</b><span>同宗玩家共享据点归属，互相不可攻击。</span></div><div className="sect-create-row"><input aria-label="新宗门名称" maxLength={12} placeholder="创建新宗门（2—12字）" value={sectName} onChange={event => onNameChange(event.target.value)} /><button className="btn-sub" disabled={working || sectName.trim().length < 2} onClick={async () => { setWorking(true); await createSect(sectName); setWorking(false); onNameChange('') }}>创建</button></div>{otherSects.map(row => <div className="sect-row" key={row.id}><span><b>{row.name}</b><small>战功 {fmt(row.score)}</small></span><button className="btn-sub" disabled={working} onClick={async () => { setWorking(true); await joinSect(row.id); setWorking(false) }}>加入</button></div>)}{error && <div className="sect-error">{error}</div>}</div></>
-}
 
 function ConnectionState({ title, detail, action, onAction }: { title: string; detail?: string; action?: string; onAction?: () => void }) { return <div className="connection-state"><div className="connection-rune">◎</div><b>{title}</b>{detail && <span>{detail}</span>}{action && <button className="btn-main" onClick={onAction}>{action}</button>}</div> }
 function ownerLabel(node: OnlineNodeState, mySectId?: string): string { if (!node.ownerSectId) return '秘境守军'; if (node.ownerSectId === mySectId) return `${node.ownerSectName} · 我方`; return `${node.ownerSectName} · 敌方玩家` }

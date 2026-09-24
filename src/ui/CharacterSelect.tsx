@@ -7,8 +7,17 @@ import { sprite } from './util'
 export function CharacterSelect() {
   const gender = useGame(s => s.character.gender)
   const chooseGender = useGame(s => s.chooseGender)
+  const connectionError = useGame(s => s.connectionError)
   const [selected, setSelected] = useState<Gender>('male')
+  const [working, setWorking] = useState(false)
   if (gender !== null) return null
+
+  const confirm = async () => {
+    if (working) return
+    setWorking(true)
+    const result = await chooseGender(selected)
+    if (!result.ok) setWorking(false)
+  }
 
   return (
     <div className="character-select-mask" role="dialog" aria-modal="true" aria-labelledby="character-select-title">
@@ -38,12 +47,14 @@ export function CharacterSelect() {
             </button>
           ))}
         </div>
+        {connectionError && <div className="hint" role="alert">{connectionError}</div>}
         <button
           className="btn-main character-confirm"
           type="button"
-          onClick={() => chooseGender(selected)}
+          onClick={() => void confirm()}
+          disabled={working}
         >
-          以此身入道
+          {working ? '入道中…' : '以此身入道'}
         </button>
       </div>
     </div>

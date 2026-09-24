@@ -8,11 +8,11 @@ export function Sheet({
 }: { title: string; sub?: string; onClose: () => void; children: ReactNode }) {
   return (
     <div className="sheet-mask" onClick={onClose}>
-      <div className="sheet" onClick={e => e.stopPropagation()}>
+      <div className="sheet" role="dialog" aria-modal="true" aria-label={title} onClick={e => e.stopPropagation()}>
         <div className="sheet-head">
           <span className="sheet-title">{title}</span>
           {sub && <span className="sheet-lv">{sub}</span>}
-          <button className="sheet-close" onClick={onClose}>×</button>
+          <button className="sheet-close" type="button" aria-label={`关闭${title}`} onClick={onClose}>×</button>
         </div>
         {children}
       </div>

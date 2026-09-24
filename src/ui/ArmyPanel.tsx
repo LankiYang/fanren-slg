@@ -3,7 +3,6 @@ import { TROOPS, TROOP_MAP, CULTIVATORS } from '../game/data'
 import { useGame } from '../game/store'
 import { Cost } from './Sheet'
 import { sprite, fmt } from './util'
-import { PracticePurpose } from './PracticeGuide'
 
 /** 演武场：练兵 */
 export function TroopList() {
@@ -22,7 +21,6 @@ export function TroopList() {
 
   return (
     <div>
-      <PracticePurpose section="army" />
       <div className="section-title">
         总战力 {fmt(s.derived.totalPower)}
         {yanwuLv === 0
@@ -115,9 +113,7 @@ export function CultivatorList() {
 
   return (
     <div>
-      <PracticePurpose section="cultivator">
-        <div className="practice-purpose-tip">培养建议：先选一套主力兵种，不要把资源平均分散；对应修士的等级会同时影响秘境、远征和战区。</div>
-      </PracticePurpose>
+      <div className="practice-purpose-tip cultivator-tip">培养建议：先选一套主力兵种，不要把资源平均分散；对应修士的等级会同时影响秘境、远征和战区。</div>
       <div className="section-title">修士 · 提升对应兵种战力</div>
       {CULTIVATORS.map(c => {
         const st = s.cultivators[c.key]

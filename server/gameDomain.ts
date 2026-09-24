@@ -41,7 +41,7 @@ export const GAME_STATE_SCHEMA_VERSION = 1
 const GAME_COMMANDS: readonly GameCommandName[] = [
   'character.choose', 'building.start', 'building.claim', 'realm.breakthrough',
   'seek.draw', 'seek.temper', 'seek.milestone.claim', 'troops.train', 'formation.set',
-  'cultivator.level', 'stage.attack', 'queue.unlock', 'boss.challenge', 'quest.claim',
+  'cultivator.level', 'stage.attack', 'queue.unlock', 'boss.challenge', 'quest.claim', 'guide.flag',
   'gongfa.research', 'pill.craft', 'pill.collect', 'pill.use', 'artifact.forge',
   'expedition.explore', 'expedition.weekly.claim', 'expedition.season.claim',
   'expedition.shop.buy',

@@ -5,6 +5,8 @@ import type { BossReport, ResourceKey } from '../game/types'
 import { useGame } from '../game/store'
 import { useRevealSequence, ImpactFlash } from './BattleFx'
 import { sprite, fmt, fmtTime, useCountUp } from './util'
+import { useOnline } from '../online/onlineStore'
+import { OnlineSectManagement } from './OnlineSectManagement'
 
 /** 宗门 · 合围妖兽（对应无尽冬日的熊出没） */
 export function SectPanel({ now }: { now: number }) {
@@ -13,12 +15,14 @@ export function SectPanel({ now }: { now: number }) {
   const bossReadyAt = useGame(x => x.bossReadyAt)
   const unlockQueue = useGame(x => x.unlockQueue)
   const maybeStartIntro = useGame(x => x.maybeStartIntro)
+  const online = useOnline()
   const [report, setReport] = useState<BossReport | null>(null)
   const [hint, setHint] = useState('')
 
   const built = s.buildings.zongmen.level > 0
 
   useEffect(() => { if (built) maybeStartIntro('sect') }, [built, maybeStartIntro])
+  useEffect(() => { void online.connect() }, [online.connect])
   const readyAt = s.derived.boss.readyAt || bossReadyAt()
   const onCooldown = now < readyAt
   const hp = s.derived.boss.hp
@@ -88,6 +92,16 @@ export function SectPanel({ now }: { now: number }) {
           </button>
         </div>
       </div>
+
+      {online.snapshot ? (
+        <OnlineSectManagement snapshot={online.snapshot} />
+      ) : (
+        <section className="online-sect-management" aria-label="宗门管理">
+          <div className="section-title">宗门身份</div>
+          <div className="blocker">{online.status === 'connecting' ? '正在同步宗门信息…' : online.error || '宗门信息暂时不可用'}</div>
+          {online.status === 'offline' && <button className="btn-sub" type="button" onClick={() => void online.connect()}>重新同步</button>}
+        </section>
+      )}
     </div>
   )
 }

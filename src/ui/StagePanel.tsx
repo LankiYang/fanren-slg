@@ -4,7 +4,6 @@ import type { ResourceKey, TroopKey } from '../game/types'
 import { useGame } from '../game/store'
 import { Formation } from './Formation'
 import { PracticeBattleScene } from './PracticeBattleScene'
-import { PracticePurpose } from './PracticeGuide'
 import { sprite, fmt } from './util'
 
 interface Report {
@@ -109,7 +108,6 @@ export function StagePanel() {
 
   return (
     <div>
-      <PracticePurpose section="stage" />
       <div className="section-title">秘境探索 · 已通关 {s.clearedStage}/{STAGES.length}</div>
 
       {chapters.map(ch => {

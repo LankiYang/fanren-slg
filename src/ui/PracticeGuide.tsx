@@ -71,7 +71,7 @@ export function PracticeOverview({ active, onSelect }: { active: PracticeSection
         <span className="practice-overview-badge">玩法总览</span>
       </div>
 
-      <div className="practice-loop">
+      <div className="practice-loop" role="tablist" aria-label="历练分类">
         {FLOW.map((section, index) => {
           const item = PRACTICE_GUIDE[section]
           return (
@@ -81,6 +81,9 @@ export function PracticeOverview({ active, onSelect }: { active: PracticeSection
                 className={'practice-loop-item' + (active === section ? ' active' : '')}
                 onClick={() => onSelect(section)}
                 aria-label={`查看${item.label}用途`}
+                data-tut={`practice-${section}`}
+                role="tab"
+                aria-selected={active === section}
               >
                 <i>{item.icon}</i>
                 <b>{item.label}</b>

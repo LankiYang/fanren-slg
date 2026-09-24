@@ -4,6 +4,13 @@ import type {
 
 const TOKEN_KEY = 'fanren-slg-online-token-v1'
 
+/** HTTP 部署不是 secure context 时，浏览器可能没有 crypto.randomUUID。 */
+export function createRequestId(): string {
+  const cryptoApi = globalThis.crypto
+  if (cryptoApi && typeof cryptoApi.randomUUID === 'function') return cryptoApi.randomUUID()
+  return `req-${Date.now().toString(36)}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`
+}
+
 export class OnlineApiError extends Error {
   constructor(message: string, readonly status: number, readonly code?: string) { super(message) }
 }

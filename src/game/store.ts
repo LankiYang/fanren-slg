@@ -13,7 +13,7 @@ import {
 } from './compute'
 import { createInitialGameState } from './defaults'
 import { FEATURE_INTRO, GUIDE_TOURS, TUTORIAL } from './tutorial'
-import { sendGameCommand, fetchGameSnapshot, getSessionToken, clearSessionToken, OnlineApiError } from '../online/api'
+import { sendGameCommand, fetchGameSnapshot, getSessionToken, clearSessionToken, OnlineApiError, createRequestId } from '../online/api'
 import type { GameCommandName, GameDerivedSnapshot, GameSnapshot } from '../online/contracts'
 
 const UI_PREFS_KEY = 'fanren-slg-ui-preferences-v1'
@@ -137,6 +137,8 @@ interface Store extends GameState {
   activeGuide: string | null
   guideStep: number
   connectionError: string
+  /** 防止较早发出的同步响应覆盖较新的操作结果。 */
+  snapshotServerTime: number
   connect: () => Promise<void>
   tick: () => Promise<void>
   clearOfflineReport: () => void
@@ -193,6 +195,7 @@ function errorResult(error: unknown): Result {
 
 function applySnapshot(set: (patch: Partial<Store>) => void, get: () => Store, snapshot: GameSnapshot): void {
   const previous = get()
+  if (snapshot.serverTime < previous.snapshotServerTime) return
   const prefs = readUiPreferences()
   const floats = [...previous.floats, ...makeFloats(previous.resources, snapshot.game.resources)].slice(-24)
   set({
@@ -210,6 +213,7 @@ function applySnapshot(set: (patch: Partial<Store>) => void, get: () => Store, s
     guideFlags: snapshot.game.guideFlags,
     journeyStartedAt: snapshot.game.journeyStartedAt,
     connectionError: '',
+    snapshotServerTime: snapshot.serverTime,
   })
 }
 
@@ -236,6 +240,7 @@ export const useGame = create<Store>((set, get) => {
     activeGuide: null,
     guideStep: 0,
     connectionError: '',
+    snapshotServerTime: 0,
 
     connect: async () => {
       if (connectPromise) return connectPromise
@@ -345,7 +350,7 @@ export const useGame = create<Store>((set, get) => {
     reset: () => {
       try { localStorage.removeItem(UI_PREFS_KEY) } catch { /* no-op */ }
       clearSessionToken()
-      set({ ...localInitialState(), derived: EMPTY_DERIVED, offlineReport: null, floats: [], activeGuide: null, guideStep: 0, connectionError: '' })
+      set({ ...localInitialState(), derived: EMPTY_DERIVED, offlineReport: null, floats: [], activeGuide: null, guideStep: 0, connectionError: '', snapshotServerTime: 0 })
       void get().connect()
     },
   }
@@ -359,7 +364,7 @@ async function command<T extends object>(
 ): Promise<Result & T> {
   try {
     if (!getSessionToken()) throw new Error('请先登录账号')
-    const response = await sendGameCommand({ requestId: crypto.randomUUID(), command: name, payload })
+    const response = await sendGameCommand({ requestId: createRequestId(), command: name, payload })
     applySnapshot(set, get, response.snapshot)
     return response.result as Result & T
   } catch (error) {

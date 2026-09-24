@@ -2,7 +2,7 @@ import { create } from 'zustand'
 import type { BattleProfile, TroopKey, WarfrontTactic } from '../game/types'
 import type { OnlineBattleReport, OnlinePlayerSearch, WarfrontPreview, WarfrontSnapshot } from './contracts'
 import {
-  attackWarfront, clearSessionToken, createOnlineSect, fetchChatMessages, fetchWarfront, garrisonWarfront, getSessionToken, guestLogin, joinOnlineSect, loginAccount, marchWarfront, OnlineApiError, previewWarfront, recruitSeasonTroops, registerAccount, removeOnlineFriend, renameOnlinePlayer, requestOnlineFriend, respondOnlineFriend, searchOnlinePlayers, sendChatMessage, syncOnlineBattleProfile, withdrawWarfront,
+  attackWarfront, clearSessionToken, createOnlineSect, createRequestId, fetchChatMessages, fetchWarfront, garrisonWarfront, getSessionToken, guestLogin, joinOnlineSect, loginAccount, marchWarfront, OnlineApiError, previewWarfront, recruitSeasonTroops, registerAccount, removeOnlineFriend, renameOnlinePlayer, requestOnlineFriend, respondOnlineFriend, searchOnlinePlayers, sendChatMessage, syncOnlineBattleProfile, withdrawWarfront,
 } from './api'
 
 type ConnectionStatus = 'idle' | 'connecting' | 'online' | 'offline'
@@ -45,6 +45,18 @@ function beginOnlineMutation(): () => void {
   return () => { mutationInFlight = Math.max(0, mutationInFlight - 1) }
 }
 
+type OnlineSet = (patch: Partial<OnlineState>) => void
+
+function applyOnlineError(set: OnlineSet, error: unknown, fallback: string, offline = false): void {
+  if (error instanceof OnlineApiError && error.status === 401) {
+    clearSessionToken()
+    set({ status: 'idle', snapshot: null, error: '登录已失效，请重新登录' })
+    return
+  }
+  const message = error instanceof Error ? error.message : fallback
+  set(offline ? { status: 'offline', error: message } : { error: message })
+}
+
 export const useOnline = create<OnlineState>((set, get) => ({
   status: 'idle',
   snapshot: null,
@@ -66,12 +78,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
         const result = await fetchWarfront()
         set({ status: 'online', snapshot: result, error: '' })
       } catch (error) {
-        if (error instanceof OnlineApiError && error.status === 401) {
-          clearSessionToken()
-          set({ status: 'idle', snapshot: null, error: '登录已失效，请重新登录' })
-        } else {
-          set({ status: 'offline', error: error instanceof Error ? error.message : '无法连接多人服务器' })
-        }
+        applyOnlineError(set, error, '无法连接多人服务器', true)
       } finally {
         finishMutation()
         connectPromise = null
@@ -94,7 +101,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
           : null
         set({ status: 'online', snapshot, error: '', ...(freshReport ? { lastReport: freshReport } : {}) })
       } catch (error) {
-        set({ status: 'offline', error: error instanceof Error ? error.message : '战区同步失败' })
+        applyOnlineError(set, error, '战区同步失败', true)
       }
     })()
     refreshPromise = run
@@ -107,11 +114,11 @@ export const useOnline = create<OnlineState>((set, get) => ({
     const finishMutation = beginOnlineMutation()
     set({ error: '' })
     try {
-      const result = await attackWarfront({ requestId: crypto.randomUUID(), nodeKey, tactic, formation })
+      const result = await attackWarfront({ requestId: createRequestId(), nodeKey, tactic, formation })
       set({ status: 'online', snapshot: result.snapshot, lastReport: result.report })
       return result.report
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '出征失败' })
+      applyOnlineError(set, error, '出征失败')
       return null
     } finally { finishMutation() }
   },
@@ -120,11 +127,11 @@ export const useOnline = create<OnlineState>((set, get) => ({
     const finishMutation = beginOnlineMutation()
     set({ error: '' })
     try {
-      const result = await marchWarfront({ requestId: crypto.randomUUID(), nodeKey, tactic, formation })
+      const result = await marchWarfront({ requestId: createRequestId(), nodeKey, tactic, formation })
       set({ status: 'online', snapshot: result.snapshot })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '行军下达失败' })
+      applyOnlineError(set, error, '行军下达失败')
       return false
     } finally { finishMutation() }
   },
@@ -133,7 +140,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
     try {
       return await previewWarfront({ nodeKey, tactic, formation })
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '战力预览失败' })
+      applyOnlineError(set, error, '战力预览失败')
       return null
     }
   },
@@ -146,7 +153,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
       set({ status: 'online', snapshot: result.snapshot })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '征募失败' })
+      applyOnlineError(set, error, '征募失败')
       return false
     } finally { finishMutation() }
   },
@@ -155,11 +162,11 @@ export const useOnline = create<OnlineState>((set, get) => ({
     const finishMutation = beginOnlineMutation()
     set({ error: '' })
     try {
-      const result = await garrisonWarfront({ requestId: crypto.randomUUID(), nodeKey, formation })
+      const result = await garrisonWarfront({ requestId: createRequestId(), nodeKey, formation })
       set({ status: 'online', snapshot: result.snapshot })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '驻防失败' })
+      applyOnlineError(set, error, '驻防失败')
       return false
     } finally { finishMutation() }
   },
@@ -168,11 +175,11 @@ export const useOnline = create<OnlineState>((set, get) => ({
     const finishMutation = beginOnlineMutation()
     set({ error: '' })
     try {
-      const result = await withdrawWarfront({ requestId: crypto.randomUUID(), nodeKey, formation })
+      const result = await withdrawWarfront({ requestId: createRequestId(), nodeKey, formation })
       set({ status: 'online', snapshot: result.snapshot })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '撤防失败' })
+      applyOnlineError(set, error, '撤防失败')
       return false
     } finally { finishMutation() }
   },
@@ -185,7 +192,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
       set({ status: 'online', snapshot })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '创建宗门失败' })
+      applyOnlineError(set, error, '创建宗门失败')
       return false
     } finally { finishMutation() }
   },
@@ -198,7 +205,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
       set({ status: 'online', snapshot })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '加入宗门失败' })
+      applyOnlineError(set, error, '加入宗门失败')
       return false
     } finally { finishMutation() }
   },
@@ -207,7 +214,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
     try {
       return (await searchOnlinePlayers(query, onlineOnly)).players
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '搜索玩家失败' })
+      applyOnlineError(set, error, '搜索玩家失败')
       return []
     }
   },
@@ -220,7 +227,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
       set({ status: 'online', snapshot })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '改名失败' })
+      applyOnlineError(set, error, '改名失败')
       return false
     } finally { finishMutation() }
   },
@@ -233,7 +240,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
       set({ status: 'online', snapshot: result.snapshot })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '战力档案同步失败' })
+      applyOnlineError(set, error, '战力档案同步失败')
       return false
     } finally { finishMutation() }
   },
@@ -246,7 +253,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
       set({ status: 'online', snapshot })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '好友申请发送失败' })
+      applyOnlineError(set, error, '好友申请发送失败')
       return false
     } finally { finishMutation() }
   },
@@ -259,7 +266,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
       set({ status: 'online', snapshot })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '好友申请处理失败' })
+      applyOnlineError(set, error, '好友申请处理失败')
       return false
     } finally { finishMutation() }
   },
@@ -272,7 +279,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
       set({ status: 'online', snapshot })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '删除好友失败' })
+      applyOnlineError(set, error, '删除好友失败')
       return false
     } finally { finishMutation() }
   },
@@ -285,7 +292,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
       const result = await guestLogin()
       set({ status: 'online', snapshot: result.snapshot })
     } catch (error) {
-      set({ status: 'offline', error: error instanceof Error ? error.message : '创建新身份失败' })
+      applyOnlineError(set, error, '创建新身份失败', true)
     } finally { finishMutation() }
   },
 
@@ -297,7 +304,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
       set({ status: 'online', snapshot: result.snapshot, error: '' })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '注册失败' })
+      applyOnlineError(set, error, '注册失败')
       return false
     }
   },
@@ -306,7 +313,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
     try {
       return (await fetchChatMessages(channel, after)).messages
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '聊天同步失败' })
+      applyOnlineError(set, error, '聊天同步失败')
       return []
     }
   },
@@ -315,7 +322,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
     try {
       return (await sendChatMessage({ channel, text })).messages
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '消息发送失败' })
+      applyOnlineError(set, error, '消息发送失败')
       return []
     }
   },
@@ -326,7 +333,7 @@ export const useOnline = create<OnlineState>((set, get) => ({
       set({ status: 'online', snapshot: result.snapshot, error: '' })
       return true
     } catch (error) {
-      set({ error: error instanceof Error ? error.message : '登录失败' })
+      applyOnlineError(set, error, '登录失败')
       return false
     }
   },

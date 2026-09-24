@@ -399,6 +399,27 @@ button {
 
 .scene-wrap > .scene { flex: 1; }
 
+/* 底部主导航对应的是独立页面；只有建筑详情、任务和战报才使用模态底部弹层。 */
+.main-page-panel {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-anchor: none;
+  -webkit-overflow-scrolling: touch;
+  padding: 10px 8px 28px;
+  animation: rise .18s ease-out;
+}
+
+.main-page-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  padding: 2px 2px 9px;
+}
+
+.main-page-heading b { color: var(--gold); font-size: 16px; font-weight: 600; }
+.main-page-heading span { color: var(--text-dim); font-size: 10px; }
+
 .quest-track {
   position: absolute;
   left: 8px;
@@ -534,6 +555,10 @@ button {
   z-index: 200;
   pointer-events: none;
 }
+
+/* 功能说明只占用自己的对话框区域，不阻断玩家继续操作页面。 */
+.tut-root.passive .tut-dialog,
+.tut-root.passive .tut-skip { pointer-events: auto; }
 
 /* 四块遮罩围出孔洞；它们各自吃点击，孔洞处无 DOM 故点击穿透到目标 */
 .tut-mask {
@@ -773,7 +798,7 @@ button {
 }
 
 /* ── 底部导航 ── */
-/* z-index 高于 .sheet-mask(40)：面板打开时仍可直接点底栏切换，不必先关闭 */
+/* 主导航始终固定在游戏内容下方；模态弹层打开后由 .sheet-mask 覆盖它。 */
 .tabbar {
   position: relative;
   z-index: 50;
@@ -811,7 +836,7 @@ button {
 .sheet-mask {
   position: absolute;
   inset: 0;
-  z-index: 40;
+  z-index: 60;
   background: rgba(0,0,0,0.6);
   display: flex;
   align-items: flex-end;
@@ -819,15 +844,13 @@ button {
 
 .sheet {
   width: 100%;
-  max-height: 72%;
+  max-height: min(82%, calc(100% - 24px));
   overflow-y: auto;
   background: var(--ink);
   border-top: 1px solid rgba(216,177,104,0.35);
   border-radius: 12px 12px 0 0;
-  /* 底部留出底栏高度(62px)+余量：底栏 z-index 高于面板（为了面板打开时仍能切页签），
-     不留白的话面板最后一个元素会滑到底栏底下点不到 —— 实测「升级」按钮
-     有 21px（过半）被盖住，引导里让玩家点它会直接卡死。 */
-  padding: 14px 14px 78px;
+  /* 模态层覆盖主导航，底部不再需要为导航额外留出一块不可操作的空白。 */
+  padding: 14px 14px 18px;
   animation: rise .18s ease-out;
 }
 
@@ -1130,8 +1153,8 @@ button {
 /* ── 共享战争地图：地图是主操作面，面板只承载命令 ── */
 .warfront-panel { padding-bottom: 8px; }
 /* 战区改为整屏页签（不再是 72% 高的弹层），直接吃满 .scene-wrap 剩余高度，自行滚动。 */
-.scene-wrap > .warfront-panel { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; -webkit-overflow-scrolling: touch; padding: 8px 8px 16px; animation: rise .18s ease-out; }
-.scene-wrap > .warfront-panel .warfront-map-stage { position: relative; flex: 0 0 clamp(280px, 44vh, 520px); height: clamp(280px, 44vh, 520px); min-height: 0; }
+.scene-wrap > .warfront-panel { flex: 1; min-height: 0; overflow-y: auto; overflow-anchor: none; -webkit-overflow-scrolling: touch; padding: 8px 8px 72px; animation: rise .18s ease-out; }
+.scene-wrap > .warfront-panel .warfront-map-stage { position: relative; flex: 0 0 clamp(300px, 38vh, 520px); height: clamp(300px, 38vh, 520px); min-height: 0; }
 .scene-wrap > .warfront-panel .warfront-map-canvas { height: 100%; min-height: 0; aspect-ratio: unset; }
 .warfront-map-shell { margin: 0 -2px 10px; border: 1px solid rgba(216,177,104,.32); border-radius: 8px; overflow: hidden; background: #0b171d; box-shadow: 0 12px 28px rgba(0,0,0,.24); }
 .warfront-map-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 9px 10px; border-bottom: 1px solid rgba(216,177,104,.18); background: linear-gradient(90deg, rgba(19,49,52,.78), rgba(25,32,47,.75)); }

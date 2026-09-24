@@ -7,7 +7,6 @@ import { Formation } from './Formation'
 import { ExpeditionBattleScene } from './ExpeditionBattleScene'
 import { Sheet } from './Sheet'
 import { fmt, fmtTime, sprite } from './util'
-import { PracticePurpose } from './PracticeGuide'
 
 const KIND_META: Record<ExpeditionNodeKind, { label: string; icon: string }> = {
   battle: { label: '破阵', icon: '⚔' },
@@ -72,9 +71,6 @@ export function ExpeditionPanel({ now }: { now: number }) {
 
   return (
     <div className="expedition-panel">
-      <PracticePurpose section="expedition">
-        <div className="practice-purpose-tip">每天先看路线再出发：稳妥路线保证推进，压榨路线追求积分与远征币；远征币在“战绩”里兑换资源和永久遗物。</div>
-      </PracticePurpose>
       <div className="expedition-heading">
         <div className="expedition-title-row">
           <img className="expedition-theme-art" src={sprite(theme.sprite)} alt="" />

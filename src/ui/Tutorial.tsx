@@ -26,6 +26,7 @@ const FALLBACK_DIALOG_H = 220
  */
 export function Tutorial() {
   const done = useGame(x => x.tutorialDone)
+  const characterGender = useGame(x => x.character.gender)
   const step = useGame(x => x.tutorialStep)
   const nextStep = useGame(x => x.nextTutorialStep)
   const skip = useGame(x => x.skipTutorial)
@@ -43,10 +44,12 @@ export function Tutorial() {
   const dialogRef = useRef<HTMLDivElement>(null)
 
   // 开局引导优先级最高；任务教程正在播放时，功能首次引导让路，避免两个蒙层叠在一起
-  const onboarding = !done
+  // 角色身份确定前只显示角色选择，不能让引导蒙层抢走确认按钮的点击。
+  const onboarding = !done && characterGender !== null
   const guideSteps = activeGuideId ? GUIDE_TOURS[activeGuideId] : undefined
   const introSteps = activeIntroId ? FEATURE_INTRO[activeIntroId as keyof typeof FEATURE_INTRO] : undefined
   const taskGuide = !onboarding && !!guideSteps
+  const passiveIntro = !onboarding && !taskGuide && !!introSteps
   const cur = onboarding ? TUTORIAL[step] : taskGuide ? guideSteps?.[guideStep] : introSteps?.[introStep]
   const curLen = onboarding ? TUTORIAL.length : taskGuide ? (guideSteps?.length ?? 0) : (introSteps?.length ?? 0)
   const curStep = onboarding ? step : taskGuide ? guideStep : introStep
@@ -139,7 +142,7 @@ export function Tutorial() {
     return () => document.removeEventListener('click', onClick, true)
   }, [active, curStep, cur, advance])
 
-  if (!active) return null
+  if (characterGender === null || !active) return null
 
   const isClickStep = cur.advance === 'click' && !!cur.target
   // 纯对话步骤：整屏可点推进；点击步骤：只有孔洞可点，遮罩吞掉点击
@@ -149,7 +152,7 @@ export function Tutorial() {
   const dialogStyle = layout.mode === 'above' ? { top: layout.top, bottom: 'auto' as const } : undefined
 
   return (
-    <div className="tut-root">
+    <div className={'tut-root' + (passiveIntro ? ' passive' : '')}>
       {/* 跳过按钮只在对话框真被钉在屏幕最顶（罕见的兜底情况）时才需要让位到底部，
           贴目标上方（'above'）时对话框本来就不占最顶那块空间，不用挪 */}
       <button
@@ -158,7 +161,7 @@ export function Tutorial() {
       >
         跳过引导
       </button>
-      {hole ? (
+      {!passiveIntro && (hole ? (
         <>
           {/* 四块遮罩围出孔洞，孔洞区域没有 DOM，点击自然穿透 */}
           <div className="tut-mask" style={{ left: 0, top: 0, width: '100%', height: Math.max(0, hole.y) }} onClick={maskClick} />
@@ -173,7 +176,7 @@ export function Tutorial() {
         </>
       ) : (
         <div className="tut-mask tut-mask-full" onClick={maskClick} />
-      )}
+      ))}
 
       <div
         ref={dialogRef}

@@ -1,5 +1,6 @@
 import { TROOPS, TROOP_MAP } from '../game/data'
 import type { TroopKey } from '../game/types'
+import { formationUsed } from '../game/compute'
 import { useGame } from '../game/store'
 import { sprite, fmt } from './util'
 
@@ -14,8 +15,9 @@ export function Formation({ enemyTroop }: { enemyTroop: TroopKey }) {
   const s = useGame()
   const setFormation = useGame(x => x.setFormation)
   const cap = s.derived.marchCap
-  const used = s.derived.formationUsed
-  const left = cap - used
+  // 进度条直接从当前快照的编队和兵力计算，避免旧 derived 快照在请求竞态时造成回跳。
+  const used = formationUsed(s)
+  const left = Math.max(0, cap - used)
 
   const apply = (k: TroopKey, v: number) => {
     // 不能超过拥有量，也不能超过剩余名额
