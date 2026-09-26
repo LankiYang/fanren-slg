@@ -90,10 +90,10 @@ function valley() {
   for (let i = 0; i < 18; i++) { const x = 10 + i * 34 + rnd() * 10, y = 300 + rnd() * 26; cv.path(`M${f(x)} ${f(y)}l3 -8 3 8z`, `fill="#4f7f78" fill-opacity=".6"`) }
   ridge(cv, 300, [[-10, 340], [40, 262], [90, 320], [150, 292], [210, 350], [270, 312], [330, 360], [400, 302], [450, 256], [510, 322], [610, 276]], 'url(#mid)')
   // 中景瀑布（分三叠）
-  cv.path('M292 316q8 -4 16 0L318 420h-32z', `fill="#e7f6f0" fill-opacity=".9"`)
-  for (const dx of [-8, -3, 2, 7]) cv.path(`M${300 + dx * 0.4} 320L${300 + dx} 416`, `stroke="#fff" stroke-opacity=".7" stroke-width="1" stroke-dasharray="10 4"`)
-  for (const y of [350, 386]) cv.path(`M288 ${y}q14 -6 28 0`, `fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2"`)
-  mist(cv, 240, 400, 140, 22, 0.6)
+  cv.path('M112 306q8 -4 16 0L138 420h-32z', `fill="#e7f6f0" fill-opacity=".9"`)
+  for (const dx of [-8, -3, 2, 7]) cv.path(`M${120 + dx * 0.4} 310L${120 + dx} 416`, `stroke="#fff" stroke-opacity=".7" stroke-width="1" stroke-dasharray="10 4"`)
+  for (const y of [350, 386]) cv.path(`M108 ${y}q14 -6 28 0`, `fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2"`)
+  mist(cv, 60, 400, 140, 22, 0.6)
   // 近山夹峙（青绿山石）
   crag(cv, 30, 470, 230, [[-60, -260], [-10, -196], [52, -132]], 'bgL', { seed: 31 })
   crag(cv, 580, 460, 250, [[-64, -124], [0, -214], [62, -290]], 'bgR', { seed: 37 })
@@ -119,8 +119,9 @@ function valley() {
   }
 
   // 河：从瀑布下流出，绕开建筑落点，从左侧流出画面
-  const riverL = [[292, 420], [360, 500], [352, 590], [250, 660], [160, 780], [70, 850], [-20, 880]]
-  const riverR = [[312, 420], [396, 506], [388, 610], [282, 690], [196, 810], [104, 890], [-20, 930]]
+  // 河：从后山左侧瀑布落下，沿左岸流出画面（与 3D 场景 homeLayout 一致，建筑都不压河道）
+  const riverL = [[112, 420], [92, 520], [66, 640], [50, 760], [28, 880], [0, 1000], [-30, 1090]]
+  const riverR = [[136, 420], [122, 526], [98, 648], [84, 770], [64, 892], [38, 1014], [10, 1110]]
   const rp = [...riverL, ...riverR.slice().reverse()]
   const bank = [...riverL.map(([x, y]) => [x - 5, y - 2]), ...riverR.slice().reverse().map(([x, y]) => [x + 5, y + 3])]
   cv.path(smooth(bank, true), `fill="#b9a67c" stroke="#6e5c3c" stroke-opacity=".5" stroke-width="1"`)
@@ -133,12 +134,12 @@ function valley() {
     cv.path(`M${f(x - w / 2)} ${f(y)}q${f(w / 4)} -3 ${f(w / 2)} 0t${f(w / 2)} 0`, `fill="none" stroke="#fff" stroke-opacity="${f(0.35 + rnd() * 0.35)}" stroke-width="1.1" stroke-linecap="round"`)
   }
   // 河石与芦苇
-  for (const [x, y, r] of [[372, 560, 7], [338, 640, 5], [214, 748, 6], [120, 842, 7], [300, 600, 4]]) {
+  for (const [x, y, r] of [[128, 540, 6], [58, 660, 5], [96, 760, 6], [30, 900, 7]]) {
     cv.path(`M${x - r} ${y}Q${x - r} ${y - r * 0.9} ${x} ${y - r}Q${x + r} ${y - r * 0.8} ${x + r} ${y}Z`, `fill="${C.stone2}" stroke="${C.line}" stroke-opacity=".6" stroke-width=".8"`)
     cv.path(`M${x - r * 0.5} ${y - r * 0.7}q${r * 0.4} -0.3 ${r * 0.8} 0`, `fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".8"`)
     cv.path(`M${x - r - 3} ${y + 1}q${r + 3} 3 ${r * 2 + 6} 0`, `fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".8"`)
   }
-  for (const [x, y] of [[404, 520], [396, 630], [292, 710], [200, 830], [60, 900], [150, 776]]) {
+  for (const [x, y] of [[140, 520], [110, 640], [96, 800], [70, 910], [16, 780]]) {
     for (let k = 0; k < 5; k++) cv.path(`M${x + k * 2} ${y}q${-2 + k} -8 ${-1 + k * 1.5} -${14 + k * 2}`, `fill="none" stroke="${k % 2 ? '#6f8e4a' : '#a9b86a'}" stroke-width="1" stroke-linecap="round"`)
     cv.path(`M${x + 3} ${y - 16}q1 -3 0 -6`, `stroke="#8a6a3c" stroke-width="2.2" stroke-linecap="round"`)
   }
@@ -156,22 +157,17 @@ function valley() {
       }
     }
   }
-  cv.path('M300 1210C296 1100 310 990 300 890C292 850 300 820 300 800', `fill="none" stroke="#3a4a36" stroke-opacity=".35" stroke-width="40" stroke-linecap="round"`)
-  flagstones([[300, 1200], [298, 1100], [306, 1000], [300, 900], [298, 850], [300, 806]], 30, 30)
-  flagstones([[300, 960], [240, 972], [190, 990], [150, 1008]], 12, 12)
-  flagstones([[300, 960], [360, 972], [410, 990], [450, 1008]], 12, 12)
-  flagstones([[292, 724], [240, 726], [190, 742], [140, 760]], 12, 12)
-  flagstones([[308, 740], [360, 732], [420, 744], [470, 770]], 12, 12)
-  // 拱桥：石拱 + 栏板
-  cv.path('M252 700Q282 664 312 694L312 700Q282 676 252 706Z', `fill="${C.stone3}" stroke="${C.line}" stroke-opacity=".7" stroke-width="1"`)
-  cv.path('M252 700Q282 664 312 694', `fill="none" stroke="${C.stone4}" stroke-width="1.2"`)
-  for (let i = 0; i <= 6; i++) { const t = i / 6, x = 252 + 60 * t, y = (1 - t) * (1 - t) * 700 + 2 * (1 - t) * t * 664 + t * t * 694; cv.path(`M${f(x)} ${f(y)}v-6`, `stroke="${C.stone4}" stroke-width="1.6"`) }
-  cv.path('M252 694Q282 658 312 688', `fill="none" stroke="${C.stone4}" stroke-width="1.4"`)
-  cv.path('M262 702a8 6 0 0 1 16 0', `fill="${C.ink}" fill-opacity=".5"`)
-
+  cv.path('M310 1210C306 1060 316 900 312 760C310 640 318 560 324 480', `fill="none" stroke="#3a4a36" stroke-opacity=".35" stroke-width="40" stroke-linecap="round"`)
+  flagstones([[310, 1200], [308, 1060], [314, 900], [312, 760], [316, 640], [324, 490]], 30, 38)
+  flagstones([[310, 1040], [250, 1050], [200, 1060]], 12, 10)
+  flagstones([[310, 1040], [380, 1046], [430, 1052]], 12, 10)
+  flagstones([[312, 820], [250, 818], [190, 822]], 12, 10)
+  flagstones([[312, 830], [380, 828], [430, 836]], 12, 10)
+  flagstones([[314, 650], [260, 654], [220, 660]], 12, 8)
+  flagstones([[314, 640], [380, 646], [440, 660]], 12, 8)
   // 草叶与野花（避开建筑落点）
   seed = 11
-  const avoid = (x, y) => [[0.21, 0.6], [0.79, 0.61], [0.5, 0.66], [0.22, 0.8], [0.78, 0.81], [0.5, 0.87], [0.23, 0.99], [0.77, 1], [0.2, 0.42], [0.8, 0.44]].some(([bx, by]) => Math.abs(x - bx * W) < 64 && y < by * H + 6 && y > by * H - 120)
+  const avoid = (x, y) => [[0.34, 0.44], [0.76, 0.7], [0.75, 0.45], [0.29, 0.55], [0.54, 0.39], [0.8, 0.56], [0.76, 0.88], [0.52, 0.52], [0.25, 0.68], [0.27, 0.88]].some(([bx, by]) => Math.abs(x - bx * W) < 64 && y < by * H + 6 && y > by * H - 120)
   for (let i = 0; i < 420; i++) {
     const x = rnd() * W, y = 450 + rnd() * 750
     if (avoid(x, y)) continue
@@ -180,10 +176,10 @@ function valley() {
     if (rnd() > 0.93) { const pc = [C.red3, C.gold3, '#f4efe0', C.purple3][Math.floor(rnd() * 4)]; for (let k = 0; k < 4; k++) cv.circle(x + Math.cos(k * 1.57) * 1.4, y - 8 + Math.sin(k * 1.57) * 1.4, 1.1, `fill="${pc}"`); cv.circle(x, y - 8, 0.8, `fill="${C.gold2}"`) }
   }
   // 边缘松与灌木
-  for (const [x, y, sc] of [[26, 520, 1.3], [576, 540, 1.4], [18, 700, 1.5], [585, 700, 1.5], [210, 520, 0.9], [400, 470, 0.8], [470, 900, 1], [590, 930, 1.5], [12, 1060, 1.6], [396, 1180, 1.2]]) pineOn(x, y, sc)
-  for (const [x, y, sc] of [[380, 560, 1], [224, 620, 1], [420, 860, 1.1], [180, 900, 1], [560, 1140, 1.2], [240, 1180, 1.1], [120, 1160, 1]]) { const g = new Canvas(); bush(g, 0, 0, sc, [C.grass1, C.grass2, C.grass3, rnd() > 0.5 ? C.red3 : undefined]); cv.embed(g, x, y) }
+  for (const [x, y, sc] of [[190, 470, 0.9], [576, 540, 1.4], [585, 700, 1.5], [420, 470, 0.8], [440, 1000, 1], [590, 930, 1.5], [150, 1180, 1.6], [470, 1180, 1.2], [260, 760, 0.9]]) pineOn(x, y, sc)
+  for (const [x, y, sc] of [[250, 600, 1], [400, 760, 1], [560, 1140, 1.2], [360, 1180, 1.1]]) { const g = new Canvas(); bush(g, 0, 0, sc, [C.grass1, C.grass2, C.grass3, rnd() > 0.5 ? C.red3 : undefined]); cv.embed(g, x, y) }
   // 石灯
-  for (const [x, y] of [[270, 822], [330, 822]]) {
+  for (const [x, y] of [[292, 500], [356, 500]]) {
     cv.path(`M${x - 6} ${y}h12v-3h-12z`, `fill="${C.stone2}" ${STROKE}`)
     cv.path(`M${x - 2.4} ${y - 3}h4.8v-11h-4.8z`, `fill="${C.stone3}" ${STROKE}`)
     cv.path(`M${x - 5} ${y - 14}h10v-8h-10z`, `fill="${C.stone3}" ${STROKE}`)
@@ -203,39 +199,40 @@ function warmap() {
   cv.def(`<pattern id="grid" width="64" height="64" patternUnits="userSpaceOnUse"><path d="M64 0H0V64" fill="none" stroke="#d8b168" stroke-opacity=".08" stroke-width="1"/></pattern>`)
   cv.path(`M0 0H${S}V${S}H0Z`, 'fill="url(#land)"')
   cv.path(`M0 0H${S}V${S}H0Z`, 'fill="url(#grid)"')
-  // 等高线：几组同心不规则环
+  // 地形与 3D 沙盘（src/ui/world/WarfrontWorld.ts）一致：北境群山护住坠星堡、迷雾关夹在两山垭口、
+  // 望月灵泉临湖、赤铁矿岭为赭红岩丘、青萝药圃为梯田。坐标用地图百分比 ×10.24。
+  const M = v => v * 10.24
   seed = 23
-  const hills = [[210, 250, 150], [790, 230, 170], [180, 760, 140], [820, 790, 160], [520, 520, 110], [520, 130, 90]]
-  for (const [hx, hy, r] of hills) {
+  const hills = [[34, 6, 90, false], [66, 5, 100, false], [50, 10, 80, false], [5, 48, 90, false], [33, 43, 60, false], [30, 62, 50, false], [80, 85, 60, true], [66, 88, 44, true], [76, 74, 40, true], [95, 50, 80, false]]
+  for (const [hx, hy, r, red] of hills) {
     const offs = Array.from({ length: 10 }, () => 0.75 + rnd() * 0.5)
     for (let k = 5; k >= 1; k--) {
       const rr = r * k / 5
-      const pts = offs.map((o, i) => { const a = i / offs.length * Math.PI * 2; return [hx + Math.cos(a) * rr * o, hy + Math.sin(a) * rr * o * 0.8] })
-      cv.path(smooth(pts), `fill="${k === 1 ? '#4a7a6c' : 'none'}" fill-opacity=".35" stroke="#8fd9c8" stroke-opacity="${0.08 + (5 - k) * 0.03}" stroke-width="1.4"`)
+      const pts = offs.map((o, i) => { const a = i / offs.length * Math.PI * 2; return [M(hx) + Math.cos(a) * rr * o, M(hy) + Math.sin(a) * rr * o * 0.8] })
+      cv.path(smooth(pts), `fill="${k === 1 ? (red ? '#8a4a36' : '#4a7a6c') : 'none'}" fill-opacity=".45" stroke="${red ? '#e7a07a' : '#8fd9c8'}" stroke-opacity="${0.1 + (5 - k) * 0.035}" stroke-width="1.4"`)
     }
   }
-  // 山形符号（舆图画法：一笔三峰）
-  const mountain = (x, y, s) => {
-    cv.path(`M${x - 22 * s} ${y}L${x - 8 * s} ${y - 20 * s}L${x} ${y - 10 * s}L${x + 10 * s} ${y - 28 * s}L${x + 26 * s} ${y}Z`, `fill="#1b2e30" stroke="#8fd9c8" stroke-opacity=".55" stroke-width="1.6" stroke-linejoin="round"`)
-    cv.path(`M${x + 10 * s} ${y - 28 * s}L${x + 16 * s} ${y}M${x - 8 * s} ${y - 20 * s}L${x - 4 * s} ${y}`, `stroke="#8fd9c8" stroke-opacity=".3" stroke-width="1.2"`)
+  const mountain = (x, y, s, red = false) => {
+    const st = red ? '#e7a07a' : '#8fd9c8'
+    cv.path(`M${x - 22 * s} ${y}L${x - 8 * s} ${y - 20 * s}L${x} ${y - 10 * s}L${x + 10 * s} ${y - 28 * s}L${x + 26 * s} ${y}Z`, `fill="${red ? '#3a2420' : '#1b2e30'}" stroke="${st}" stroke-opacity=".6" stroke-width="1.6" stroke-linejoin="round"`)
+    cv.path(`M${x + 10 * s} ${y - 28 * s}L${x + 16 * s} ${y}M${x - 8 * s} ${y - 20 * s}L${x - 4 * s} ${y}`, `stroke="${st}" stroke-opacity=".3" stroke-width="1.2"`)
   }
-  for (const [x, y, s] of [[170, 230, 1.6], [240, 270, 1.2], [790, 210, 1.8], [860, 260, 1.1], [730, 250, 1], [160, 760, 1.5], [220, 790, 1], [820, 780, 1.7], [880, 820, 1.1], [520, 110, 1.2], [60, 480, 1], [960, 520, 1.1]]) mountain(x, y, s)
-  // 河流
-  const river = 'M-20 420C120 440 240 400 360 470C470 535 560 520 640 470C760 400 880 460 1044 430'
-  cv.path(river, `fill="none" stroke="#0e1a20" stroke-width="30" stroke-linecap="round" stroke-opacity=".6"`)
-  cv.path(river, `fill="none" stroke="#5fa6a0" stroke-width="16" stroke-linecap="round" stroke-opacity=".75"`)
-  cv.path(river, `fill="none" stroke="#cfeee4" stroke-width="2" stroke-dasharray="10 18" stroke-opacity=".5"`)
-  const trib = 'M520 1044C510 900 560 780 520 640C505 590 540 540 560 515'
-  cv.path(trib, `fill="none" stroke="#5fa6a0" stroke-width="9" stroke-linecap="round" stroke-opacity=".6"`)
-  // 林点
-  for (let i = 0; i < 260; i++) {
-    const cx = [300, 700, 380, 660, 120, 900][i % 6] + (rnd() - 0.5) * 160, cy = [640, 640, 300, 330, 580, 600][i % 6] + (rnd() - 0.5) * 120
-    cv.circle(cx, cy, 2 + rnd() * 2.5, `fill="#6f9c6a" fill-opacity="${0.25 + rnd() * 0.3}"`)
+  for (const [x, y, sc] of [[30, 8, 1.6], [40, 5, 1.2], [62, 6, 1.8], [72, 9, 1.2], [4, 44, 1.4], [8, 56, 1.1], [34, 42, 1.1], [31, 62, 0.9], [96, 46, 1.3], [96, 60, 1]]) mountain(M(x), M(y), sc)
+  for (const [x, y, sc] of [[80, 86, 1.3], [66, 89, 1], [77, 74, 0.9]]) mountain(M(x), M(y), sc, true)
+  // 药圃梯田
+  for (let i = 0; i < 7; i++) cv.path(`M${M(70)} ${M(46 + i * 2)}Q${M(78)} ${M(44.5 + i * 2)} ${M(87)} ${M(46.5 + i * 2)}`, `fill="none" stroke="${i % 2 ? '#b9d98f' : '#e0d08a'}" stroke-opacity=".45" stroke-width="7"`)
+  // 溪流汇入望月湖
+  const stream = [[12, 4], [13, 20], [11, 36], [12, 50], [15, 63], [21, 74], [26, 81]].map(([x, y]) => [M(x), M(y)])
+  cv.path(smooth(stream, false), `fill="none" stroke="#0e1a20" stroke-width="16" stroke-linecap="round" stroke-opacity=".6"`)
+  cv.path(smooth(stream, false), `fill="none" stroke="#5fa6a0" stroke-width="9" stroke-linecap="round" stroke-opacity=".8"`)
+  cv.circle(M(27), M(83), M(7.5), `fill="#3f8a86" fill-opacity=".85" stroke="#8fd9c8" stroke-opacity=".6" stroke-width="2"`)
+  for (let i = 0; i < 4; i++) cv.path(`M${M(22 + i * 2.4)} ${M(81 + i * 1.4)}q12 -5 24 0`, `fill="none" stroke="#cfeee4" stroke-opacity=".5" stroke-width="1.6"`)
+  // 林点：与 3D 松林同位置
+  for (const [gx, gy, rad, n] of [[36, 24, 7, 30], [64, 24, 7, 30], [40, 66, 6, 22], [60, 64, 6, 22], [90, 36, 6, 20], [8, 84, 6, 18], [88, 96, 6, 18], [14, 96, 6, 16], [22, 30, 5, 16]]) {
+    for (let i = 0; i < n; i++) cv.circle(M(gx + (rnd() - 0.5) * rad * 2), M(gy + (rnd() - 0.5) * rad * 2), 2.4 + rnd() * 2.4, `fill="#6f9c6a" fill-opacity="${f(0.3 + rnd() * 0.35)}"`)
   }
-  // 驿道（虚线）
-  for (const d of ['M200 300C300 420 420 500 520 520', 'M800 280C700 400 620 480 520 520', 'M200 740C300 640 420 560 520 520', 'M820 780C720 660 620 580 520 520', 'M520 150C520 280 520 400 520 520']) {
-    cv.path(d, `fill="none" stroke="#d8b168" stroke-opacity=".32" stroke-width="3" stroke-dasharray="2 10" stroke-linecap="round"`)
-  }
+  // 我方营地
+  for (const dx of [-24, 0, 24]) cv.path(`M${M(50) + dx - 9} ${M(95)}l9 -14 9 14z`, `fill="#e2d5b6" fill-opacity=".8" stroke="#d8b168" stroke-opacity=".6"`)
   // 纸边与四角描金
   cv.path(`M0 0H${S}V${S}H0Z`, `fill="none" stroke="#d8b168" stroke-opacity=".35" stroke-width="10"`)
   cv.path(`M18 18H${S - 18}V${S - 18}H18Z`, `fill="none" stroke="#d8b168" stroke-opacity=".25" stroke-width="2"`)
@@ -249,3 +246,13 @@ function warmap() {
 
 save('bg/main-valley.svg', valley())
 save('bg/warfront-map.svg', warmap())
+
+// ── 3D 场景用的公告板贴图：由 three.js 作为 Sprite 贴在地形上 ──
+{
+  const g = new Canvas(); pine(g, 0, 0, 1.6); save('scene/pine.svg', g.toString(2))
+  const g2 = new Canvas(); pine(g2, 0, 0, 1.6, true); save('scene/pine-dark.svg', g2.toString(2))
+  const g3 = new Canvas(); bush(g3, 0, 0, 1.6, [C.grass1, C.grass2, C.grass3, C.red3]); save('scene/bush.svg', g3.toString(2))
+  const g4 = new Canvas(); bush(g4, 0, 0, 1.6); save('scene/bush-plain.svg', g4.toString(2))
+  const g5 = new Canvas(); crane(g5, 30, 30, 2); save('scene/crane.svg', g5.toString(2))
+  const g6 = new Canvas(); cloud(g6, 10, 30, 2.4, 0.95); save('scene/cloud.svg', g6.toString(2))
+}

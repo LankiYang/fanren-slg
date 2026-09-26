@@ -1,4 +1,10 @@
-import { useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { createContext, useContext, useEffect, useRef, useState, type CSSProperties, type ReactNode } from 'react'
+import { webglAvailable } from './world/webgl'
+import type { Relation } from './world/WarfrontWorld'
+
+type Pt = { x: number; y: number }
+/** 3D 沙盘可用时，覆盖层坐标需经镜头投影；否则直接用地图百分比 */
+const ProjectCtx = createContext<((p: Pt) => Pt) | null>(null)
 import { TROOP_MAP } from '../game/data'
 import { WARFRONT_NODE_MAP, WARFRONT_NODES } from '../game/warfront'
 import type { OnlineNodeState, WarfrontSnapshot } from '../online/contracts'
@@ -19,9 +25,12 @@ export function WarfrontMap({ snapshot, selectedKey, now, onSelect, command }: W
   const destination = ownArmy ? WARFRONT_NODE_MAP[ownArmy.destinationKey ?? ''] : null
   const mapPosition = snapshot.player.mapPosition ?? { x: 50, y: 94 }
   const justCaptured = useCaptureFlash(snapshot.nodes)
+  const world = useWarfrontWorld(snapshot, selectedKey)
+  const pointStyle = (p: Pt) => toStyle(world.project ? world.project(p) : p)
 
   return (
-    <section className="warfront-map-shell" aria-label="苍梧秘境共享战争地图">
+    <ProjectCtx.Provider value={world.project}>
+    <section className={'warfront-map-shell' + (world.mode === '3d' ? ' warfront-3d' + (world.ready ? ' ready' : '') : '')} aria-label="苍梧秘境共享战争地图">
       <div className="warfront-map-toolbar">
         <div>
           <span className="warfront-map-kicker">共享战争地图</span>
@@ -31,18 +40,20 @@ export function WarfrontMap({ snapshot, selectedKey, now, onSelect, command }: W
       </div>
       <div className="warfront-map-stage">
         <div className="warfront-map-canvas">
-          <img className="warfront-map-terrain" src={sprite('bg/warfront-map.svg')} alt="" aria-hidden="true" />
+          {world.mode === '3d'
+            ? <canvas className="warfront-world" ref={world.canvasRef} aria-hidden="true" />
+            : <img className="warfront-map-terrain" src={sprite('bg/warfront-map.svg')} alt="" aria-hidden="true" />}
           <div className="warfront-map-atmosphere" aria-hidden="true" />
-          <div className="warfront-map-grid" aria-hidden="true" />
-          <svg className="warfront-roads" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+          {world.mode === '2d' && <div className="warfront-map-grid" aria-hidden="true" />}
+          {world.mode === '2d' && <svg className="warfront-roads" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
             {WARFRONT_NODES.flatMap(node => node.connections
               .filter(key => node.key < key)
               .map(key => {
                 const target = WARFRONT_NODE_MAP[key]
                 return target ? <line key={`${node.key}-${key}`} x1={node.position.x} y1={node.position.y} x2={target.position.x} y2={target.position.y} /> : null
               }))}
-          </svg>
-          <div className="warfront-map-watermark" aria-hidden="true">苍梧</div>
+          </svg>}
+          {world.mode === '2d' && <div className="warfront-map-watermark" aria-hidden="true">苍梧</div>}
           <div className="warfront-map-compass" aria-hidden="true"><b>N</b><span>✦</span></div>
 
           <div className="warfront-player-position" style={pointStyle(mapPosition)} aria-label={`${snapshot.player.name}当前位置`}>
@@ -107,7 +118,42 @@ export function WarfrontMap({ snapshot, selectedKey, now, onSelect, command }: W
         <span className="warfront-map-help">点击据点选择目标</span>
       </div>
     </section>
+    </ProjectCtx.Provider>
   )
+}
+
+/** 挂载 3D 沙盘：懒加载 three.js，失败或无 WebGL 时退回 2D 舆图 */
+function useWarfrontWorld(snapshot: WarfrontSnapshot, selectedKey: string) {
+  const [mode, setMode] = useState<'3d' | '2d'>(() => (webglAvailable() ? '3d' : '2d'))
+  const [ready, setReady] = useState(false)
+  const [, setVersion] = useState(0)
+  const canvasRef = useRef<HTMLCanvasElement>(null)
+  const worldRef = useRef<import('./world/WarfrontWorld').WarfrontWorld | null>(null)
+
+  useEffect(() => {
+    if (mode !== '3d') return
+    let ro: ResizeObserver | null = null
+    let cancelled = false
+    import('./world/WarfrontWorld').then(({ WarfrontWorld }) => {
+      if (cancelled || !canvasRef.current) return
+      const w = new WarfrontWorld(canvasRef.current)
+      worldRef.current = w
+      w.onProjectionChange = () => setVersion(v => v + 1)
+      ro = new ResizeObserver(() => w.resize())
+      ro.observe(canvasRef.current)
+      setReady(true)
+    }).catch(err => { console.warn('战区 3D 沙盘加载失败，退回 2D：', err); if (!cancelled) setMode('2d') })
+    return () => { cancelled = true; ro?.disconnect(); worldRef.current?.dispose(); worldRef.current = null }
+  }, [mode])
+
+  useEffect(() => {
+    const w = worldRef.current
+    if (!w) return
+    w.setNodes(snapshot.nodes.map(n => ({ key: n.key, relation: (n.ownerSectId ? (n.ownerSectId === snapshot.player.sectId ? 'mine' : 'rival') : 'neutral') as Relation })), selectedKey)
+  })
+
+  const project = mode === '3d' && ready && worldRef.current ? (p: Pt) => worldRef.current!.project(p) : null
+  return { mode, ready, canvasRef, project }
 }
 
 function MapNode({ nodeKey, state, mySectId, selected, justCaptured, onSelect }: {
@@ -125,7 +171,7 @@ function MapNode({ nodeKey, state, mySectId, selected, justCaptured, onSelect }:
     <button
       type="button"
       className={className}
-      style={pointStyle(def.position)}
+      style={usePointStyle(def.position)}
       onClick={() => onSelect(nodeKey)}
       aria-label={`${def.name}，${state.ownerSectName ?? '秘境守军'}，守军 ${state.garrisonTotal}`}
     >
@@ -165,8 +211,13 @@ function marchProgress(army: { startedAt: number | null; arriveAt: number | null
   return Math.max(0, Math.min(1, (now - start) / total))
 }
 
-function pointStyle(point: { x: number; y: number }): CSSProperties {
+function toStyle(point: Pt): CSSProperties {
   return { left: `${point.x}%`, top: `${point.y}%` }
+}
+/** 覆盖层定位：有 3D 投影就走投影 */
+function usePointStyle(point: Pt): CSSProperties {
+  const project = useContext(ProjectCtx)
+  return toStyle(project ? project(point) : point)
 }
 
 function formatRemaining(arriveAt: number, now: number): string {

@@ -19,62 +19,62 @@ export const RESOURCE_META: Record<ResourceKey, { name: string; icon: string; de
 }
 
 export const BUILDINGS: BuildingDef[] = [
-  // pos.x = 水平中心，pos.y = 建筑的「地面接触线」（建筑由此向上生长，见 styles.css .bld）。
-  // 按远近分四排，y 越大越靠近镜头、scale 越大；渲染时按 y 排序，近处遮挡远处。
+  // pos / scale 只用于 2D 退路（无 WebGL 时）：数值取自 3D 场景（src/ui/world/homeLayout.ts）投影后的屏幕位置，
+  // 保证两种模式布局一致。pos.x = 水平中心，pos.y = 地面接触线（建筑由此向上生长），渲染时按 y 排序。
   // ── 远排 ──
   {
     key: 'cangjing', name: '藏经阁', desc: '参研功法，解锁长期增益。',
     produces: null, sprite: 'building/cangjing.svg',
-    pos: { x: 20, y: 42 }, scale: 15, unlockAt: BUILDING_UNLOCK.cangjing,
+    pos: { x: 34, y: 44 }, scale: 18, unlockAt: BUILDING_UNLOCK.cangjing,
   },
   {
     key: 'lianqi', name: '炼器阁', desc: '以矿灵材锻造法宝，提升部队战力。',
     produces: null, sprite: 'building/lianqi.svg',
-    pos: { x: 80, y: 44 }, scale: 20, unlockAt: BUILDING_UNLOCK.lianqi,
+    pos: { x: 76, y: 70 }, scale: 24, unlockAt: BUILDING_UNLOCK.lianqi,
   },
   // ── 中排 ──
   {
     key: 'juling', name: '聚灵阵', desc: '汇聚天地灵气，持续产出灵气。',
     produces: 'lingqi', sprite: 'building/juling-formation.svg',
-    pos: { x: 21, y: 60 }, scale: 24, unlockAt: BUILDING_UNLOCK.juling,
+    pos: { x: 75, y: 45 }, scale: 21, unlockAt: BUILDING_UNLOCK.juling,
   },
   {
     key: 'lingtian', name: '灵田', desc: '培植灵草，持续产出灵药。',
     produces: 'lingyao', sprite: 'building/lingtian.svg',
-    pos: { x: 79, y: 61 }, scale: 26, unlockAt: BUILDING_UNLOCK.lingtian,
+    pos: { x: 29, y: 55 }, scale: 24, unlockAt: BUILDING_UNLOCK.lingtian,
   },
   // ── 主建筑：居中偏上，体量最大 ──
   {
     key: 'dongfu', name: '洞府', desc: '你的立身之所。等级决定其余建筑的上限，也是突破境界的前置。',
     produces: null, sprite: 'building/dongfu.svg',
-    pos: { x: 50, y: 66 }, scale: 36, unlockAt: BUILDING_UNLOCK.dongfu,
+    pos: { x: 54, y: 39 }, scale: 31, unlockAt: BUILDING_UNLOCK.dongfu,
   },
   // ── 近排 ──
   {
     key: 'kuangmai', name: '矿脉', desc: '开采地脉灵矿，持续产出矿灵材。',
     produces: 'kuanglingcai', sprite: 'building/kuangmai.svg',
-    pos: { x: 22, y: 80 }, scale: 28, unlockAt: BUILDING_UNLOCK.kuangmai,
+    pos: { x: 80, y: 56 }, scale: 27, unlockAt: BUILDING_UNLOCK.kuangmai,
   },
   {
     key: 'fangshi', name: '坊市', desc: '与散修交易，持续产出灵石。',
     produces: 'lingshi', sprite: 'building/fangshi.svg',
-    pos: { x: 78, y: 81 }, scale: 28, unlockAt: BUILDING_UNLOCK.fangshi,
+    pos: { x: 76, y: 88 }, scale: 30, unlockAt: BUILDING_UNLOCK.fangshi,
   },
   {
     key: 'liandan', name: '炼丹房', desc: '以灵药炼制丹药，提升全局产出。',
     produces: null, sprite: 'building/liandan.svg',
-    pos: { x: 50, y: 87 }, scale: 24, unlockAt: BUILDING_UNLOCK.liandan,
+    pos: { x: 52, y: 52 }, scale: 19, unlockAt: BUILDING_UNLOCK.liandan,
   },
   // ── 最近排 ──
   {
     key: 'yanwu', name: '演武场', desc: '操练傀儡、灵兽与符修。等级决定兵力上限。',
     produces: null, sprite: 'building/yanwu.svg',
-    pos: { x: 23, y: 99 }, scale: 30, unlockAt: BUILDING_UNLOCK.yanwu,
+    pos: { x: 25, y: 68 }, scale: 27, unlockAt: BUILDING_UNLOCK.yanwu,
   },
   {
     key: 'zongmen', name: '宗门大殿', desc: '加入宗门，参与合围妖兽等协作玩法。',
     produces: null, sprite: 'building/zongmen.svg',
-    pos: { x: 77, y: 100 }, scale: 32, unlockAt: BUILDING_UNLOCK.zongmen,
+    pos: { x: 27, y: 88 }, scale: 38, unlockAt: BUILDING_UNLOCK.zongmen,
   },
 ]
 

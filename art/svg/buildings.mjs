@@ -144,23 +144,26 @@ function banner(cv, x, y, z, h, col = C.red2) {
   cv.line([[bx, by], [tx, ty]], `stroke="${cv.grad([[0, C.wood3], [1, C.wood1]], 'h')}" stroke-width="1.4"`)
   cv.path(`M${f(tx)} ${f(ty - 1)}l-1.6 -3.4h3.2z`, `fill="${C.gold2}" ${THIN}`, [[tx, ty - 5]])
   cv.path(`M${f(tx - 1)} ${f(ty + 1)}h7`, `stroke="${C.gold1}" stroke-width="1.2"`)
-  // 旗面带飘动褶皱 + 回纹镶边 + 流苏
+  // 旗面带飘动褶皱 + 回纹镶边 + 流苏（整面随风摆）
+  cv.open('a-sway', (Math.abs(tx) * 0.13) % 2.6)
   const d = `M${f(tx + 1)} ${f(ty + 2)}C${f(tx + 6)} ${f(ty + 1)} ${f(tx + 10)} ${f(ty + 4)} ${f(tx + 15)} ${f(ty + 3)}C${f(tx + 13)} ${f(ty + 12)} ${f(tx + 15)} ${f(ty + 20)} ${f(tx + 16)} ${f(ty + 27)}C${f(tx + 11)} ${f(ty + 27)} ${f(tx + 6)} ${f(ty + 24)} ${f(tx + 1)} ${f(ty + 25)}Z`
   cv.path(d, `fill="${cv.grad([[0, lt(col, 0.1)], [1, dk(col, 0.2)]], 'h')}" ${STROKE}`, [[tx, ty], [tx + 17, ty + 30]])
   cv.path(`M${f(tx + 3)} ${f(ty + 4.5)}C${f(tx + 7)} ${f(ty + 4)} ${f(tx + 10)} ${f(ty + 6)} ${f(tx + 13)} ${f(ty + 5.4)}M${f(tx + 3)} ${f(ty + 22.5)}C${f(tx + 7)} ${f(ty + 22)} ${f(tx + 10)} ${f(ty + 24)} ${f(tx + 14)} ${f(ty + 24.6)}`, `fill="none" stroke="${C.gold3}" stroke-width=".7"`)
   cv.circle(tx + 8.5, ty + 14, 3.4, `fill="none" stroke="${C.gold3}" stroke-width=".8"`)
   cv.path(`M${f(tx + 7)} ${f(ty + 12.6)}h3M${f(tx + 8.5)} ${f(ty + 11.8)}v4.4M${f(tx + 7)} ${f(ty + 15.6)}h3`, `stroke="${C.gold3}" stroke-width=".6"`)
   for (let i = 0; i < 4; i++) cv.path(`M${f(tx + 2 + i * 4.4)} ${f(ty + 25 + i * 0.6)}v3`, `stroke="${C.gold2}" stroke-width=".7"`)
+  cv.close()
 }
 
 function lantern(cv, x, y, z, hang = true) {
   const [px, py] = iso(x, y, z)
-  cv.circle(px, py - 4, 9, `fill="${cv.rad(C.fire2, 0.45)}"`)
+  const dl = (Math.abs(px * 0.37 + py * 0.11)) % 1.7
+  cv.open('a-flicker', dl); cv.circle(px, py - 4, 9, `fill="${cv.rad(C.fire2, 0.45)}"`); cv.close()
   if (hang) cv.path(`M${f(px)} ${f(py - 13)}v4`, `stroke="${C.line}" stroke-width=".8"`, [[px, py - 13]])
   cv.path(`M${f(px - 2.4)} ${f(py - 9)}h4.8v1.2h-4.8z`, `fill="${C.gold1}" ${THIN}`, [[px - 3, py - 9]])
   cv.ellipse(px, py - 4.2, 4.2, 4.8, `fill="${cv.grad([[0, C.red3], [0.5, C.red2], [1, C.red0]], 'h')}" ${STROKE}`)
   for (const dx of [-2, 0, 2]) cv.path(`M${f(px + dx)} ${f(py - 8.8)}Q${f(px + dx * 1.6)} ${f(py - 4.2)} ${f(px + dx)} ${f(py + 0.4)}`, `fill="none" stroke="${C.red0}" stroke-opacity=".5" stroke-width=".4"`)
-  cv.ellipse(px - 1, py - 5, 1.4, 2.2, `fill="${C.fire3}" fill-opacity=".55"`)
+  cv.open('a-flicker', dl); cv.ellipse(px - 1, py - 5, 1.4, 2.2, `fill="${C.fire3}" fill-opacity=".75"`); cv.close()
   cv.path(`M${f(px - 2.4)} ${f(py + 0.4)}h4.8`, `stroke="${C.gold1}" stroke-width="1"`)
   cv.path(`M${f(px)} ${f(py + 0.6)}v3.4`, `stroke="${C.red1}" stroke-width=".9"`, [[px, py + 4]])
 }
@@ -171,9 +174,9 @@ function stoneLamp(cv, x, y, z = 0) {
   box(cv, { x: x - 1, y: y - 1, z: z + 1.6, w: 2, d: 2, h: 5, t: C.stone3, l: C.stone2, r: C.stone1, ao: false, hi: false })
   const lb = box(cv, { x: x - 2.2, y: y - 2.2, z: z + 6.6, w: 4.4, d: 4.4, h: 3.6, t: C.stone3, l: C.stone2, r: C.stone1, ao: false, hi: false })
   const q = quadL(lb, 0.25, 0.75, 0.2, 0.8)
-  cv.poly(q, C.fire3, THIN)
+  cv.poly(q, C.fire2, THIN)
   const [cx, cy] = [(q[0][0] + q[2][0]) / 2, (q[0][1] + q[2][1]) / 2]
-  cv.circle(cx, cy, 5, `fill="${cv.rad(C.fire2, 0.55)}"`)
+  cv.open('a-flicker', (Math.abs(cx) * 0.21) % 1.7); cv.poly(q, C.fire3); cv.circle(cx, cy, 5, `fill="${cv.rad(C.fire2, 0.55)}"`); cv.close()
   const [ax, ay] = iso(x, y, z + 10.2), [tx, ty] = iso(x, y, z + 13.4)
   cv.path(`M${f(ax - 5)} ${f(ay + 1.2)}Q${f(ax)} ${f(ay - 1)} ${f(ax + 5)} ${f(ay + 1.2)}L${f(tx)} ${f(ty)}Z`, `fill="${cv.grad([[0, C.stone4], [1, C.stone2]], 'h')}" ${STROKE}`, [[ax - 5, ty], [ax + 5, ay + 1.2]])
   cv.circle(tx, ty - 1, 1, `fill="${C.stone3}" ${THIN}`)
@@ -211,8 +214,13 @@ function censer(cv, px, py, s = 1, glowC = C.fire2) {
 }
 
 function smoke(cv, px, py, h = 40, col = C.paper2, o = 0.55) {
-  cv.path(`M${f(px)} ${f(py)}c-6 -6 -8 -12 -2 -${f(h * 0.3)}c6 -6 4 -12 -1 -${f(h * 0.25)}c-5 -5 -3 -12 3 -${f(h * 0.25)}`, `fill="none" stroke="${col}" stroke-opacity="${o}" stroke-width="3.2" stroke-linecap="round"`, [[px - 10, py - h], [px + 6, py]])
-  cv.path(`M${f(px + 3)} ${f(py - 2)}c5 -5 6 -10 1 -${f(h * 0.25)}c-4 -4 -3 -9 2 -${f(h * 0.2)}`, `fill="none" stroke="${col}" stroke-opacity="${o * 0.7}" stroke-width="2" stroke-linecap="round"`)
+  // 两缕错开半周期的烟，循环上升淡出
+  for (const [dl, dx] of [[0, 0], [2.1, 3]]) {
+    cv.open('a-smoke', dl)
+    cv.path(`M${f(px + dx)} ${f(py)}c-6 -6 -8 -12 -2 -${f(h * 0.3)}c6 -6 4 -12 -1 -${f(h * 0.25)}c-5 -5 -3 -12 3 -${f(h * 0.25)}`, `fill="none" stroke="${col}" stroke-opacity="${o}" stroke-width="3.2" stroke-linecap="round"`, [[px - 10, py - h], [px + 6, py]])
+    cv.path(`M${f(px + 3 + dx)} ${f(py - 2)}c5 -5 6 -10 1 -${f(h * 0.25)}c-4 -4 -3 -9 2 -${f(h * 0.2)}`, `fill="none" stroke="${col}" stroke-opacity="${o * 0.7}" stroke-width="2" stroke-linecap="round"`)
+    cv.close()
+  }
 }
 
 // ── 宗门大殿 ──
@@ -230,6 +238,7 @@ function zongmen() {
   railing(cv, p2, { gaps: [[0.33, 0.67]], step: 7 })
   stairs(cv, 65, 82, 30, 4, 4, 3.4, 0)
   censer(cv, ...iso(65, 96, 7), 0.55)
+  { const [sx, sy] = iso(65, 96, 7); smoke(cv, sx, sy - 13, 30, C.paper2, 0.5) }
   lion(cv, 44, 98, 7, -1); lion(cv, 86, 98, 7, 1)
   stoneLamp(cv, 16, 98, 7); stoneLamp(cv, 124, 90, 7)
   banner(cv, 6, 100, 7, 46, C.red2)
@@ -273,7 +282,7 @@ function lianqi() {
   const ch = box(cv, { x: 58, y: 10, z: 5, w: 14, d: 14, h: 72, t: C.stone2, l: dk(C.red1, 0.3), r: dk(C.red1, 0.45), tex: 'brick' })
   onL(cv, ch, 0, 1, 0.92, 1, C.stone2, THIN); onR(cv, ch, 0, 1, 0.92, 1, C.stone1, THIN)
   const [cx, cy] = iso(65, 17, 77)
-  cv.ellipse(cx, cy, 16, 8, `fill="${cv.rad(C.fire2, 0.6)}"`)
+  cv.open('a-pulse'); cv.ellipse(cx, cy, 16, 8, `fill="${cv.rad(C.fire2, 0.6)}"`); cv.close()
   cv.ellipse(cx, cy, 5, 2.6, `fill="${C.fire3}" fill-opacity=".8"`)
   smoke(cv, cx, cy - 2, 50, C.stone3, 0.55)
   const b = box(cv, { x: 8, y: 8, z: 5, w: 64, d: 48, h: 30, t: C.stone3, l: C.stone2, r: C.stone1, tex: 'brick' })
@@ -282,9 +291,11 @@ function lianqi() {
   for (const u of [0.02, 0.5, 0.98]) onL(cv, b, u - 0.02, u + 0.02, 0, 0.8, cv.grad([[0, C.wood0], [0.5, C.wood2], [1, C.wood0]], 'h'))
   archL(cv, b, 0.27, 0.3, 0.46, C.ink)
   const [gx, gy] = iso(8 + 64 * 0.27, 56, 10)
+  cv.open('a-flicker')
   cv.ellipse(gx, gy, 24, 16, `fill="${cv.rad(C.fire2, 0.9)}"`)
   cv.path(`M${f(gx - 7)} ${f(gy + 5)}q2 -8 4 -3q1 -7 4 -2q2 -5 5 5z`, `fill="${C.fire3}"`, [[gx - 7, gy - 4]])
   cv.path(`M${f(gx - 4)} ${f(gy + 5)}q1 -4 2 -1q1 -4 3 0z`, `fill="#fff" fill-opacity=".8"`)
+  cv.close()
   onL(cv, b, 0.62, 0.9, 0.34, 0.68, C.ink2); cv.poly(quadL(b, 0.63, 0.89, 0.36, 0.66), cv.pat('latticeL'))
   onR(cv, b, 0.3, 0.7, 0.3, 0.62, C.ink2); cv.poly(quadR(b, 0.31, 0.69, 0.32, 0.6), cv.pat('latticeR'))
   cv.poly(quadL(b, 0, 1, 0, 1), cv.grad([[0, '#000', 0.4], [0.3, '#000', 0]])); cv.poly(quadR(b, 0, 1, 0, 1), cv.grad([[0, '#000', 0.4], [0.3, '#000', 0]]))
@@ -295,7 +306,9 @@ function lianqi() {
   const [hx, hy] = iso(82, 56, 16)
   cv.path(`M${f(hx)} ${f(hy)}l7 -9`, `stroke="${C.wood2}" stroke-width="1.6" stroke-linecap="round"`, [[hx + 8, hy - 10]])
   cv.path(`M${f(hx + 4)} ${f(hy - 11)}l6 3 -2 3 -6 -3z`, `fill="${C.stone1}" ${STROKE}`)
+  cv.open('a-flicker', 0.6)
   for (let i = 0; i < 6; i++) { const a = -1.4 - i * 0.3; cv.path(`M${f(hx - 3)} ${f(hy - 3)}l${f(Math.cos(a) * (4 + i))} ${f(Math.sin(a) * (4 + i))}`, `stroke="${C.fire3}" stroke-width=".8" stroke-linecap="round"`) }
+  cv.close()
   // 兵器架 + 水桶 + 矿石堆
   box(cv, { x: 88, y: 18, z: 5, w: 3, d: 26, h: 2, t: C.wood2, l: C.wood1, r: C.wood0 })
   for (let i = 0; i < 4; i++) {
@@ -322,7 +335,7 @@ function liandan() {
   roof(cv, { x: 6, y: 6, z: 31, w: 58, d: 40, h: 16, o: 8, lift: 5, ridge: 0.6, colors: TILE })
   const [dx, dy] = iso(56, 64, 5)
   censer(cv, dx, dy, 1)
-  cv.ellipse(dx, dy - 26, 26, 18, `fill="${cv.rad(C.fire2, 0.5)}"`)
+  cv.open('a-pulse'); cv.ellipse(dx, dy - 26, 26, 18, `fill="${cv.rad(C.fire2, 0.5)}"`); cv.close()
   smoke(cv, dx - 3, dy - 26, 50, C.jade3, 0.7)
   smoke(cv, dx + 6, dy - 28, 34, C.paper2, 0.45)
   // 药篓、药柜、石灯
@@ -429,19 +442,22 @@ function juling() {
     }
   }
   const [mx, my] = iso(cx, cy, 11)
-  cv.ellipse(mx, my, 20, 10, `fill="${cv.rad(C.jade3, 0.7)}"`)
-  cv.ellipse(mx, my - 20, 46, 40, `fill="${cv.rad(C.jade2, 0.45)}"`)
+  cv.open('a-pulse'); cv.ellipse(mx, my, 20, 10, `fill="${cv.rad(C.jade3, 0.7)}"`); cv.ellipse(mx, my - 20, 46, 40, `fill="${cv.rad(C.jade2, 0.45)}"`); cv.close()
   const posts = [0, 1, 2, 3, 4, 5].map(i => { const a = i / 6 * Math.PI * 2 + Math.PI / 6; return [cx + Math.cos(a) * 35, cy + Math.sin(a) * 35] }).sort((a, b) => (a[0] + a[1]) - (b[0] + b[1]))
   const beam = () => {
+    cv.open('a-pulse', 1.2)
     cv.path(`M${f(mx - 8)} ${f(my)}L${f(mx - 3)} ${f(my - 90)}L${f(mx + 3)} ${f(my - 90)}L${f(mx + 8)} ${f(my)}Z`, `fill="${cv.grad([[0, C.jade4, 0], [0.4, C.jade3, 0.55], [1, C.jade2, 0.15]])}"`, [[mx, my - 90]])
     cv.path(`M${f(mx - 1.5)} ${f(my)}L${f(mx - 0.6)} ${f(my - 86)}L${f(mx + 0.6)} ${f(my - 86)}L${f(mx + 1.5)} ${f(my)}Z`, `fill="#fff" fill-opacity=".6"`)
+    cv.close()
+    cv.open('a-flow')
     for (let i = 0; i < 4; i++) {
       const y = my - 22 - i * 16, rx = 28 - i * 5
-      cv.path(`M${f(mx - rx)} ${f(y)}A${f(rx)} ${f(rx * 0.3)} 0 1 0 ${f(mx + rx * 0.7)} ${f(y - rx * 0.21)}`, `fill="none" stroke="${C.jade3}" stroke-opacity="${f(0.85 - i * 0.15)}" stroke-width="${f(2 - i * 0.3)}" stroke-linecap="round"`, [[mx - rx, y - rx * 0.35], [mx + rx, y + rx * 0.35]])
+      cv.path(`M${f(mx - rx)} ${f(y)}A${f(rx)} ${f(rx * 0.3)} 0 1 0 ${f(mx + rx * 0.7)} ${f(y - rx * 0.21)}`, `fill="none" stroke="${C.jade3}" stroke-opacity="${f(0.85 - i * 0.15)}" stroke-width="${f(2 - i * 0.3)}" stroke-linecap="round" stroke-dasharray="14 6"`, [[mx - rx, y - rx * 0.35], [mx + rx, y + rx * 0.35]])
       cv.path(`M${f(mx - rx * 0.9)} ${f(y + 1)}A${f(rx * 0.9)} ${f(rx * 0.27)} 0 0 0 ${f(mx + rx * 0.5)} ${f(y + rx * 0.24)}`, `fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".6"`)
     }
+    cv.close()
     srand(4)
-    for (let i = 0; i < 14; i++) cv.circle(mx + (rnd() - 0.5) * 60, my - 10 - rnd() * 80, 0.6 + rnd() * 1.1, `fill="${C.jade4}" fill-opacity="${f(0.5 + rnd() * 0.5)}"`)
+    for (let i = 0; i < 16; i++) { cv.open('a-rise', rnd() * 3.6); cv.circle(mx + (rnd() - 0.5) * 60, my - 10 - rnd() * 70, 0.6 + rnd() * 1.1, `fill="${C.jade4}" fill-opacity="${f(0.6 + rnd() * 0.4)}"`); cv.close() }
   }
   let beamDrawn = false
   for (const [px, py] of posts) {
@@ -451,7 +467,7 @@ function juling() {
     for (const v of [0.25, 0.5, 0.75]) { const q = quadL(o, 0.5, 0.5, v, v)[0]; cv.path(`M${f(q[0] - 1.2)} ${f(q[1] - 1.8)}l1.2 1.8 1.2 -1.8M${f(q[0])} ${f(q[1] - 0.6)}v2`, `fill="none" stroke="${C.jade2}" stroke-width=".6"`) }
     box(cv, { x: px - 4, y: py - 4, z: 38, w: 8, d: 8, h: 2, t: C.stone3, l: C.stone2, r: C.stone1, ao: false })
     const [tx, ty] = iso(px, py, 40)
-    cv.circle(tx, ty - 9, 10, `fill="${cv.rad(C.jade2, 0.7)}"`)
+    cv.open('a-pulse', (px * 0.3) % 3); cv.circle(tx, ty - 9, 10, `fill="${cv.rad(C.jade2, 0.7)}"`); cv.close()
     cv.path(`M${f(tx)} ${f(ty - 18)}l4.6 7 -1 6 -3.6 2.4 -3.6 -2.4 -1 -6z`, `fill="${C.jade3}" ${STROKE}`, [[tx - 5, ty - 18], [tx + 5, ty - 2]])
     cv.path(`M${f(tx)} ${f(ty - 18)}l4.6 7 -1 6 -3.6 2.4z`, `fill="${C.jade2}"`)
     cv.path(`M${f(tx)} ${f(ty - 18)}v15.4M${f(tx - 4.6)} ${f(ty - 11)}l4.6 2 4.6 -2`, `fill="none" stroke="#fff" stroke-opacity=".55" stroke-width=".5"`)
@@ -495,7 +511,7 @@ function lingtian() {
           const glowy = (r + s) % 3 === 0
           cv.path(`M${f(sx)} ${f(sy)}q-5 -3 -5 -8q4 1 5 6q1 -6 5 -7q0 5 -5 9z`, `fill="${glowy ? C.jade3 : C.grass3}" stroke="${C.grass0}" stroke-width=".5"`, [[sx - 5, sy - 9]])
           cv.path(`M${f(sx)} ${f(sy)}v-7`, `stroke="${C.grass0}" stroke-width=".4"`)
-          if (glowy) { cv.circle(sx, sy - 9, 3, `fill="${cv.rad(C.jade3, 0.7)}"`); cv.circle(sx, sy - 9, 1.1, `fill="${C.jade4}"`) }
+          if (glowy) { cv.open('a-pulse', (s * 0.7 + r * 1.1) % 3); cv.circle(sx, sy - 9, 3, `fill="${cv.rad(C.jade3, 0.7)}"`); cv.circle(sx, sy - 9, 1.1, `fill="${C.jade4}"`); cv.close() }
         } else if (kind === 'flower') {
           cv.path(`M${f(sx)} ${f(sy)}q-1 -4 0 -8`, `fill="none" stroke="${C.grass1}" stroke-width=".7"`, [[sx, sy - 8]])
           cv.path(`M${f(sx)} ${f(sy - 3)}q-3 0 -3 -2q2 -1 3 2z`, `fill="${C.grass3}"`)
@@ -537,7 +553,7 @@ function kuangmai() {
   crag(cv, bx0 + 4, by0 + 14, 156, [[-30, -88], [10, -66], [46, -48]], 'kmRock', { seed: 7 })
   pine(cv, 24, 34, 0.7)
   const crystal = (cx, cy, s, col = [C.gold3, C.gold2, C.gold1]) => {
-    cv.circle(cx, cy - 9 * s, 16 * s, `fill="${cv.rad(col[0], 0.6)}"`)
+    cv.open('a-pulse', (cx * 0.07) % 3); cv.circle(cx, cy - 9 * s, 16 * s, `fill="${cv.rad(col[0], 0.6)}"`); cv.close()
     for (const [dx, h, w, k, tilt] of [[-7, 13, 3.6, 2, -3], [-2, 22, 4.6, 0, -1], [4, 17, 4, 1, 2], [9, 10, 3, 2, 4]]) {
       const x0 = cx + (dx - w) * s, x1 = cx + (dx + w) * s, tx = cx + (dx + tilt) * s, ty = cy - h * s
       cv.path(`M${f(x0)} ${f(cy)}L${f(x0 + tilt * 0.6 * s)} ${f(cy - h * 0.72 * s)}L${f(tx)} ${f(ty)}L${f(x1 + tilt * 0.6 * s)} ${f(cy - h * 0.72 * s)}L${f(x1)} ${f(cy)}Z`, `fill="${col[k]}" ${STROKE}`, [[x0, ty], [x1, cy]])
@@ -552,7 +568,7 @@ function kuangmai() {
   const [ex, ey] = iso(34, 80, 0)
   cv.path(`M${f(ex - 17)} ${f(ey + 2)}L${f(ex - 15)} ${f(ey - 26)}Q${f(ex)} ${f(ey - 36)} ${f(ex + 15)} ${f(ey - 26)}L${f(ex + 17)} ${f(ey + 2)}Z`, `fill="${C.stone2}" ${STROKE}`, [[ex - 17, ey - 36]])
   cv.path(`M${f(ex - 13)} ${f(ey + 2)}L${f(ex - 12)} ${f(ey - 22)}Q${f(ex)} ${f(ey - 30)} ${f(ex + 12)} ${f(ey - 22)}L${f(ex + 13)} ${f(ey + 2)}Z`, `fill="${cv.grad([[0, '#05080b'], [1, C.ink2]])}" ${STROKE}`)
-  cv.ellipse(ex, ey - 6, 11, 9, `fill="${cv.rad(C.gold3, 0.7)}"`)
+  cv.open('a-flicker'); cv.ellipse(ex, ey - 6, 11, 9, `fill="${cv.rad(C.gold3, 0.7)}"`); cv.close()
   for (const [x0, x1] of [[-14, -14], [14, 14]]) { cv.line([[ex + x0, ey + 3], [ex + x1, ey - 24]], `stroke="${C.line}" stroke-width="4.6" stroke-linecap="round"`); cv.line([[ex + x0, ey + 3], [ex + x1, ey - 24]], `stroke="${cv.grad([[0, C.wood1], [0.5, C.wood3], [1, C.wood1]], 'h')}" stroke-width="2.8" stroke-linecap="round"`) }
   cv.line([[ex - 18, ey - 25], [ex + 18, ey - 25]], `stroke="${C.line}" stroke-width="5" stroke-linecap="round"`)
   cv.line([[ex - 18, ey - 25], [ex + 18, ey - 25]], `stroke="${C.wood2}" stroke-width="3" stroke-linecap="round"`)
@@ -627,7 +643,7 @@ function moonGate(cv, x, y, r) {
   cv.circle(x, y, r + 5, `fill="${cv.grad([[0, C.stone4], [1, C.stone2]])}" ${STROKE}`)
   for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; cv.line([[x + Math.cos(a) * r, y + Math.sin(a) * r], [x + Math.cos(a) * (r + 5), y + Math.sin(a) * (r + 5)]], `stroke="#000" stroke-opacity=".2" stroke-width=".5"`) }
   cv.circle(x, y, r, `fill="${cv.grad([[0, '#05080b'], [1, C.ink2]])}" ${STROKE}`)
-  cv.circle(x, y + 2, r * 0.85, `fill="${cv.rad(C.jade2, 0.85)}"`)
+  cv.open('a-pulse'); cv.circle(x, y + 2, r * 0.85, `fill="${cv.rad(C.jade2, 0.85)}"`); cv.close()
   // 洞内石阶 + 灵光
   for (let i = 0; i < 3; i++) cv.path(`M${f(x - r * 0.5 + i * 2)} ${f(y + r * 0.3 - i * 3)}h${f(r - i * 4)}`, `stroke="${C.jade3}" stroke-opacity="${f(0.6 - i * 0.15)}" stroke-width="1"`)
   cv.path(`M${f(x - r - 5)} ${f(y + r * 0.5)}h${f(r * 2 + 10)}v${f(r * 0.6)}h${f(-(r * 2 + 10))}z`, `fill="${cv.grad([[0, C.stone3], [1, C.stone1]])}" ${STROKE}`)
@@ -645,11 +661,13 @@ function dongfu(tier) {
   if (tier === 3) {
     const ax = 30 * s, ay = -40 * s, bx = 38 * s, by = 26 * s
     cv.path(`M${f(ax - 4)} ${f(ay)}Q${f(ax + 6)} ${f(ay - 2)} ${f(ax + 5)} ${f(ay + 4)}L${f(bx + 8)} ${f(by)}L${f(bx - 8)} ${f(by)}Z`, `fill="${cv.grad([[0, C.jade4, 0.95], [1, C.blue3, 0.6]])}" ${STROKE}`)
-    for (const d of [-3, -1, 1.5, 3.5]) cv.line([[ax + d * 0.8, ay + 6], [bx + d * 2, by - 4]], `stroke="#fff" stroke-opacity="${d > 0 ? 0.7 : 0.45}" stroke-width=".7" stroke-dasharray="6 3"`)
+    cv.open('a-flow')
+    for (const d of [-3, -1, 1.5, 3.5]) cv.line([[ax + d * 0.8, ay + 6], [bx + d * 2, by - 4]], `stroke="#fff" stroke-opacity="${d > 0 ? 0.75 : 0.5}" stroke-width=".8" stroke-dasharray="7 3"`)
+    cv.close()
     cv.ellipse(bx, by + 1, 18, 5.5, `fill="${C.jade4}" fill-opacity=".8" ${STROKE}`)
     for (const [dx, r] of [[-8, 3], [0, 4], [8, 3]]) cv.circle(bx + dx, by - 2, r, `fill="#fff" fill-opacity=".55"`)
     const [tx, ty] = unIso(-30 * s, -44 * s)
-    cv.circle(-30 * s, -62 * s, 38, `fill="${cv.rad(C.jade2, 0.6)}"`)
+    cv.open('a-pulse', 1); cv.circle(-30 * s, -62 * s, 38, `fill="${cv.rad(C.jade2, 0.6)}"`); cv.close()
     const deck = box(cv, { x: tx - 13, y: ty - 13, z: 0, w: 26, d: 26, h: 3, t: C.stone4, l: C.stone2, r: C.stone1, texTop: 'flag' })
     hall(cv, { x: tx - 9, y: ty - 9, z: 3, w: 18, d: 18, h: 13, cols: 2, door: true })
     railing(cv, deck, { step: 5, col: C.red1, gaps: [[0.35, 0.65]] })

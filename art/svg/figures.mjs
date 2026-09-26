@@ -15,8 +15,8 @@ export function figure(cv, o) {
   const pose = o.pose ?? 'down'
   // 光晕与地影
   if (o.aura) {
-    cv.ellipse(60, 110, 62, 92, `fill="${cv.rad(o.aura, 0.42)}"`)
-    for (const [x, y, r] of [[18, 70, 1.2], [104, 60, 1], [96, 140, 1.4], [22, 150, 1], [110, 100, 0.8]]) cv.circle(x, y, r, `fill="${lt(o.aura, 0.5)}" fill-opacity=".8"`)
+    cv.open('a-pulse'); cv.ellipse(60, 110, 62, 92, `fill="${cv.rad(o.aura, 0.42)}"`); cv.close()
+    ;[[18, 70, 1.2], [104, 60, 1], [96, 140, 1.4], [22, 150, 1], [110, 100, 0.8]].forEach(([x, y, r], i) => { cv.open('a-rise', i * 0.7); cv.circle(x, y, r, `fill="${lt(o.aura, 0.5)}" fill-opacity=".9"`); cv.close() })
   }
   cv.ellipse(60, 193, 34, 5.5, 'fill="#000" fill-opacity=".3"')
 
@@ -117,7 +117,7 @@ export function figure(cv, o) {
     cv.circle(71, 7.4, 1.4, `fill="${C.jade3}" ${T}`)
     for (const d of ['M53 20Q57 17 62 18', 'M64 18Q68 19 70 24']) cv.path(d, `fill="none" stroke="${lt(hair, 0.4)}" stroke-opacity=".6" stroke-width=".55"`)
   }
-  if (o.prop) o.prop(cv)
+  if (o.prop) { if (o.floatProp) cv.open('a-float'); o.prop(cv); if (o.floatProp) cv.close() }
 }
 
 function sleeves(cv, o, pose, robeFill) {
@@ -176,11 +176,11 @@ function sleeves(cv, o, pose, robeFill) {
 
 function make(name, o, mirror = false) { const cv = new Canvas(); figure(cv, o); save(name, cv.toString(4, null, mirror)) }
 
-const talisman = (cv, x, y, r, s = 1) => cv.add(`<g transform="translate(${x} ${y}) rotate(${r}) scale(${s})"><path d="M-5 -11h10v22h-10z" fill="${C.gold3}" ${T}/><path d="M-4 -10h8v20h-8z" fill="none" stroke="${C.red1}" stroke-width=".5"/><path d="M0 -8v14M-2.6 -5h5.2M-2.6 -1h5.2M-2 3l2 2 2 -2" fill="none" stroke="${C.red1}" stroke-width=".9" stroke-linecap="round"/></g>`, [[x - 8 * s, y - 13 * s], [x + 8 * s, y + 13 * s]])
+const talisman = (cv, x, y, r, s = 1) => { cv.open('a-float', (x * 0.05) % 3.4); cv.add(`<g transform="translate(${x} ${y}) rotate(${r}) scale(${s})"><path d="M-5 -11h10v22h-10z" fill="${C.gold3}" ${T}/><path d="M-4 -10h8v20h-8z" fill="none" stroke="${C.red1}" stroke-width=".5"/><path d="M0 -8v14M-2.6 -5h5.2M-2.6 -1h5.2M-2 3l2 2 2 -2" fill="none" stroke="${C.red1}" stroke-width=".9" stroke-linecap="round"/></g>`, [[x - 8 * s, y - 13 * s], [x + 8 * s, y + 13 * s]]); cv.close() }
 
 // 韩立（玄墨）：墨青袍、青玉滚边，掌心托一只发光小绿瓶
 make('cultivator/hanli.svg', {
-  robe: '#34475a', inner: '#1f2b36', lining: C.jade1, trim: C.jade1, sash: C.jade0, hair: '#141a20', pose: 'cast', aura: C.jade2,
+  robe: '#34475a', inner: '#1f2b36', lining: C.jade1, trim: C.jade1, sash: C.jade0, hair: '#141a20', pose: 'cast', aura: C.jade2, floatProp: true,
   prop: cv => {
     cv.circle(94, 80, 14, `fill="${cv.rad(C.jade3, 0.8)}"`)
     cv.path('M90.4 84.6Q88 90 91 92.6Q94 94.4 97 92.6Q100 90 97.6 84.6Z', `fill="${cv.grad([[0, C.jade3], [1, C.jade1]], 'h')}" ${T}`)
@@ -210,7 +210,7 @@ make('cultivator/danxiu.svg', {
 })
 // 阵修：深青袍、灰白须，身前悬一面八卦阵盘
 make('cultivator/zhenxiu.svg', {
-  robe: C.jade0, inner: '#dfe6df', lining: C.gold2, trim: C.gold1, sash: C.gold0, hair: '#8f9497', beard: '#c9ccc8', brow: '#b9bcb8', pose: 'hold', aura: C.gold3, crown: C.jade3,
+  robe: C.jade0, inner: '#dfe6df', lining: C.gold2, trim: C.gold1, sash: C.gold0, hair: '#8f9497', beard: '#c9ccc8', brow: '#b9bcb8', pose: 'hold', aura: C.gold3, crown: C.jade3, floatProp: true,
   prop: cv => {
     cv.circle(60, 102, 20, `fill="${cv.rad(C.gold3, 0.55)}"`)
     cv.circle(60, 102, 13, `fill="${cv.grad([[0, C.gold3], [1, C.gold0]])}" ${L}`)

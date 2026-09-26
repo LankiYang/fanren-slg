@@ -60,6 +60,9 @@ export class Canvas {
   track(x, y) { if (x < this.minX) this.minX = x; if (y < this.minY) this.minY = y; if (x > this.maxX) this.maxX = x; if (y > this.maxY) this.maxY = y }
   add(s, pts = []) { this.parts.push(s); for (const [x, y] of pts) this.track(x, y); return this }
   def(s) { this.defs.push(s); return this }
+  /** 动效分组：cls 取 ANIM_CSS 里的类名（a-flicker/a-pulse/a-smoke/a-sway/a-flow/a-float/a-spin/a-rise/a-drift），delay 用来错开节奏 */
+  open(cls, delay = 0, extra = '') { this.parts.push(`<g class="${cls}"${delay ? ` style="animation-delay:${f(-delay)}s"` : ''} ${extra}>`); return this }
+  close() { this.parts.push('</g>'); return this }
   /** 线性渐变（按对象包围盒），同参复用。dir: v 竖 / h 横 / d 斜 */
   grad(stops, dir = 'v') {
     const key = 'g' + dir + JSON.stringify(stops)
@@ -118,6 +121,32 @@ export class Canvas {
   }
 }
 
+/**
+ * SVG 内联动效（CSS 动画，<img> 引用时同样生效）。transform 类动画用 fill-box 以元素自身为原点。
+ * 尊重系统「减少动态效果」设置。
+ */
+const ANIM_CSS = `<style>
+.a-flicker{animation:aFlk 1.7s ease-in-out infinite}
+.a-pulse{animation:aPls 3s ease-in-out infinite}
+.a-smoke{transform-box:fill-box;transform-origin:50% 100%;animation:aSmk 4.2s linear infinite}
+.a-sway{transform-box:fill-box;transform-origin:0 0;animation:aSway 2.6s ease-in-out infinite}
+.a-flow{animation:aFlow 1.4s linear infinite}
+.a-float{animation:aFlt 3.4s ease-in-out infinite}
+.a-spin{transform-box:fill-box;transform-origin:center;animation:aSpin 14s linear infinite}
+.a-rise{animation:aRise 3.6s ease-out infinite}
+.a-drift{animation:aDrift 26s ease-in-out infinite}
+@keyframes aFlk{0%,100%{opacity:1}18%{opacity:.62}32%{opacity:.95}47%{opacity:.7}70%{opacity:1}85%{opacity:.78}}
+@keyframes aPls{0%,100%{opacity:.5}50%{opacity:1}}
+@keyframes aSmk{0%{opacity:0;transform:translateY(4px) scale(.9)}20%{opacity:.9}100%{opacity:0;transform:translateY(-14px) scale(1.25)}}
+@keyframes aSway{0%,100%{transform:skewY(-3deg) scaleX(1)}50%{transform:skewY(4deg) scaleX(.94)}}
+@keyframes aFlow{to{stroke-dashoffset:-20}}
+@keyframes aFlt{0%,100%{transform:translateY(0)}50%{transform:translateY(-3px)}}
+@keyframes aSpin{to{transform:rotate(360deg)}}
+@keyframes aRise{0%{opacity:0;transform:translateY(6px)}25%{opacity:1}100%{opacity:0;transform:translateY(-22px)}}
+@keyframes aDrift{0%,100%{transform:translateX(0)}50%{transform:translateX(24px)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important}}
+</style>`
+
 let uid = 0
 /** 每个文件的 id 前缀不同，避免同页多个内联 SVG 冲突（img 引用不冲突，但保险起见） */
 export function save(rel, svg) {
@@ -125,7 +154,7 @@ export function save(rel, svg) {
   mkdirSync(dirname(out), { recursive: true })
   const p = rel.replace(/[^a-z0-9]/gi, '').slice(-6) + (uid++)
   const s = String(svg).replace(/\s+\/>/g, '/>').replace(/id="((?:e\d+_)?[gpr]\d+)"/g, `id="${p}$1"`).replace(/url\(#((?:e\d+_)?[gpr]\d+)\)/g, `url(#${p}$1)`)
-  writeFileSync(out, s)
+  writeFileSync(out, s.includes('class="a-') ? s.replace(/(<svg[^>]*>)/, `$1${ANIM_CSS.replace(/\n/g, '')}`) : s)
 }
 
 // ── 等距投影：x 向右下、y 向左下、z 向上。可见面为顶面、y=max 面（左）、x=max 面（右）──

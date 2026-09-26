@@ -170,6 +170,18 @@ npm run art        # 重新生成 src/assets/sprites/**/*.svg
 
 **约定**：只从 `lib.mjs` 的色板取色；改图改生成脚本，不要手改 SVG；建筑 viewBox 由包围盒自动裁到贴边（场景按底边中点落地，留白会让建筑“飘”）。UI 的配色、描金边框和宋体标题集中在 `src/theme.css`，它在 `styles.css` 之后加载，只改外观不改布局。
 
+**动效**：生成的 SVG 里带 CSS 动画（`lib.mjs` 的 `ANIM_CSS`：炊烟、灯笼、旗帜、灵阵光柱与灵气环流、瀑布、炉火、灵晶、鬼火等），`<img>` 引用时照常播放，并遵守系统「减少动态效果」设置。生成脚本里用 `cv.open('a-xxx', delay) … cv.close()` 包住要动的图元。
+
+### 3D 场景（three.js）
+
+| 文件 | 作用 |
+|---|---|
+| `src/ui/world/homeLayout.ts` | 洞府空间规划：建筑地块、河道、道路、地形高度函数（改布局只改这里） |
+| `src/ui/world/HomeWorld.ts` | 洞府 3D：地形顶点色（青绿山石/草地/河岸/石板路）、流水与瀑布着色器、松林公告板、灵气粒子、云与仙鹤、镜头呼吸与指针视差 |
+| `src/ui/world/WarfrontWorld.ts` | 战区沙盘：按据点性质塑形的地形、湖与溪、流光驿道、随阵营变色的飘旗、选中光环、迷雾关雾团 |
+
+建筑与据点仍是 DOM（点击、新手引导的 `data-tut` 定位都不变）：洞府每帧把地块投影到屏幕同步建筑位置；战区用取景完成后的镜头快照做投影。three.js 按需懒加载（独立 chunk），无 WebGL 时自动退回 2D 背景——`data.ts` 里建筑的 `pos/scale` 即 3D 投影后的屏幕位置，2D 背景的河道、道路也按同一布局绘制。
+
 `gen-image.cjs` / `remove-bg.cjs` / `trim.cjs` / `optimize-sprites.cjs` 和 `art/*.json` 是旧生图流水线的遗留，已不参与打包。
 
 ## 世界观 / 人设 / 剧情核实状态(2026-09-17)

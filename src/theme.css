@@ -208,3 +208,31 @@ body, .app { background: #0c161c; }
   border-color: var(--gold-line-strong);
   border-radius: 14px;
 }
+
+/* ── 洞府 3D 场景 ── */
+.scene-world { position: absolute; inset: 0; width: 100%; height: 100%; display: block; background: #9fbcb2; }
+.scene-3d .bld { transition: filter .15s; }
+.scene-3d:not(.ready) .bld { visibility: hidden; }
+.scene-3d .scene-shade { background: linear-gradient(180deg, rgba(12, 22, 28, .55) 0%, rgba(12, 22, 28, 0) 20%, rgba(12, 22, 28, 0) 78%, rgba(12, 22, 28, .4) 100%); }
+
+/* ── 战区 3D 沙盘 ── */
+.warfront-world { position: absolute; inset: 0; z-index: 0; width: 100%; height: 100%; display: block; }
+.warfront-3d .warfront-map-atmosphere { background: radial-gradient(ellipse at 50% 45%, transparent 55%, rgba(6, 14, 18, .55) 100%); mix-blend-mode: normal; }
+.warfront-3d .warfront-map-canvas::before { display: none; }
+.warfront-3d:not(.ready) .warfront-map-node, .warfront-3d:not(.ready) .warfront-army, .warfront-3d:not(.ready) .warfront-player-position, .warfront-3d:not(.ready) .warfront-friend-position { visibility: hidden; }
+.warfront-3d.ready .warfront-map-node { animation: wf-node-in .5s 1.1s both ease-out; }
+/* 3D 下据点卡片立在旗杆上方，不挡住底下的石台与旗 */
+.warfront-3d .warfront-map-node { transform: translate(-50%, calc(-100% - 26px)); width: auto; min-width: 82px; min-height: 36px; padding: 3px 6px 3px 3px; background: rgba(11, 22, 29, .82); backdrop-filter: blur(2px); }
+.warfront-3d .warfront-map-node::after { content: ''; position: absolute; left: 50%; bottom: -26px; width: 1px; height: 26px; background: linear-gradient(180deg, rgba(224, 189, 120, .7), transparent); }
+.warfront-3d .warfront-map-node .warfront-node-ring { width: 26px; height: 26px; }
+@keyframes wf-node-in { from { opacity: 0; translate: 0 -8px; } to { opacity: 1; translate: 0 0; } }
+/* 3D 下据点只显示精简名牌；选中项展开完整信息 */
+.warfront-3d .warfront-map-node:not(.selected) { min-width: 0; min-height: 0; padding: 2px 7px 2px 2px; gap: 4px; border-radius: 999px; }
+.warfront-3d .warfront-map-node:not(.selected) .warfront-node-ring { width: 20px; height: 20px; }
+.warfront-3d .warfront-map-node:not(.selected) .warfront-node-kind,
+.warfront-3d .warfront-map-node:not(.selected) .warfront-node-copy small,
+.warfront-3d .warfront-map-node:not(.selected) .warfront-node-guard,
+.warfront-3d .warfront-map-node:not(.selected) .warfront-node-banner { display: none; }
+.warfront-3d .warfront-map-node:not(.selected) .warfront-node-copy b { font-size: 11px; white-space: nowrap; }
+.warfront-3d .warfront-map-node.selected { z-index: 6; }
+.warfront-3d .warfront-map-node:not(.selected)::after { bottom: -26px; }

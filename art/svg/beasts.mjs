@@ -22,7 +22,7 @@ function tube(cv, d, w, main, bbox) {
   cv.add(`<path d="${d}" fill="none" stroke="${lt(main, 0.55)}" stroke-opacity=".5" stroke-width="${w * 0.14}" stroke-linecap="round" transform="translate(0 ${-w * 0.26})"/>`)
 }
 function eye(cv, x, y, r = 3.2, col = C.fire3) {
-  cv.circle(x, y, r * 2.2, `fill="${cv.rad(col, 0.55)}"`)
+  cv.open('a-pulse', (x * 0.13) % 3); cv.circle(x, y, r * 2.2, `fill="${cv.rad(col, 0.55)}"`); cv.close()
   cv.ellipse(x, y, r * 1.15, r, `fill="${cv.grad([[0, lt(col, 0.5)], [1, dk(col, 0.2)]])}" ${T}`)
   cv.ellipse(x, y, r * 0.3, r * 0.85, `fill="${C.line}"`)
   cv.circle(x - r * 0.35, y - r * 0.35, r * 0.25, 'fill="#fff"')
@@ -127,7 +127,7 @@ function quadruped(cv, o) {
 // ── 我方：御兽军（青灵狼 + 甲胄骑手），朝右 ──
 {
   const cv = new Canvas()
-  cv.ellipse(84, 90, 86, 62, `fill="${cv.rad(C.jade2, 0.35)}"`)
+  cv.open('a-pulse'); cv.ellipse(84, 90, 86, 62, `fill="${cv.rad(C.jade2, 0.35)}"`); cv.close()
   quadruped(cv, { body: C.jade2, belly: C.jade4, dark: C.jade0, mane: C.jade3, tail: 'bush', head: 'wolf', marks: 'cloud', eye: C.gold3 })
   // 鞍鞯：流苏 + 金边
   cv.path('M78 60C86 52 106 52 112 60L110 72C100 77 88 77 80 72Z', `fill="${V(cv, C.red1)}" ${L}`)
@@ -171,7 +171,7 @@ function puppet(cv, o) {
   for (const y of [64, 78, 92, 104]) for (const x of [42, 78]) cv.circle(x, y, 0.9, `fill="${C.gold3}" stroke="${C.line}" stroke-width=".3"`)
   for (const d2 of ['M46 62q2 4 0 8', 'M72 76q2 4 0 8', 'M50 90q2 4 0 8']) cv.path(d2, `fill="none" stroke="${dk(m, 0.35)}" stroke-opacity=".6" stroke-width=".5"`)
   // 符纹核心
-  cv.circle(60, 80, 12, `fill="${cv.rad(g, 0.6)}"`)
+  cv.open('a-pulse'); cv.circle(60, 80, 12, `fill="${cv.rad(g, 0.6)}"`); cv.close()
   cv.circle(60, 80, 7, `fill="${C.ink}" ${T}`)
   cv.circle(60, 80, 5, `fill="none" stroke="${g}" stroke-width=".8"`)
   cv.path('M60 75.5v9M55.5 80h9M57 77l6 6M63 77l-6 6', `stroke="${g}" stroke-width=".7"`)
@@ -188,7 +188,7 @@ function puppet(cv, o) {
   cv.path('M46 36h28v8h-28z', `fill="${C.ink}" ${T}`)
   cv.path('M49 40h22', `stroke="${g}" stroke-width="2.6" stroke-linecap="round"`)
   cv.path('M49 40h22', `stroke="#fff" stroke-width=".8" stroke-linecap="round"`)
-  cv.ellipse(60, 40, 16, 6, `fill="${cv.rad(g, 0.4)}"`)
+  cv.open('a-flicker'); cv.ellipse(60, 40, 16, 6, `fill="${cv.rad(g, 0.4)}"`); cv.close()
   cv.path('M50 46v6M70 46v6M60 46v6', `stroke="${dk(m, 0.4)}" stroke-width=".8"`)
   cv.path('M48 24Q60 20 72 24', `fill="none" stroke="${lt(m, 0.4)}" stroke-width=".8"`)
   cv.path('M60 18V8', `stroke="${C.line}" stroke-width="3" stroke-linecap="round"`)
@@ -229,7 +229,7 @@ function puppet(cv, o) {
 }
 {
   const cv = new Canvas()
-  cv.ellipse(60, 90, 74, 76, `fill="${cv.rad(C.red2, 0.4)}"`)
+  cv.open('a-pulse'); cv.ellipse(60, 90, 74, 76, `fill="${cv.rad(C.red2, 0.4)}"`); cv.close()
   puppet(cv, {
     metal: C.gold1, metalDark: C.gold0, glow: C.fire2, plume: C.red1,
     weapon: cv => {
@@ -300,7 +300,7 @@ function puppet(cv, o) {
 // ── 落霞涧 · 赤焰雕 ──
 {
   const cv = new Canvas()
-  cv.ellipse(88, 80, 90, 74, `fill="${cv.rad(C.fire2, 0.5)}"`)
+  cv.open('a-pulse'); cv.ellipse(88, 80, 90, 74, `fill="${cv.rad(C.fire2, 0.5)}"`); cv.close()
   const feather = (d, c) => cv.path(d, `fill="${V(cv, c, 0.25)}" ${L}`)
   // 远翼
   feather('M96 70C110 40 140 16 170 10C160 24 166 30 150 40C164 40 160 50 144 56C154 60 146 70 120 80Z', C.fire0)
@@ -333,7 +333,7 @@ function puppet(cv, o) {
   const cv = new Canvas()
   const fur = C.wood1, furL = C.wood2
   shadow(cv, 80, 152, 64)
-  cv.ellipse(80, 80, 60, 60, `fill="${cv.rad(C.gold3, 0.25)}"`)
+  cv.open('a-pulse'); cv.ellipse(80, 80, 60, 60, `fill="${cv.rad(C.gold3, 0.25)}"`); cv.close()
   cv.path('M52 112C44 126 44 140 46 150H72L74 120Z', `fill="${H(cv, fur)}" ${L}`)
   cv.path('M108 112C116 126 116 140 114 150H88L86 120Z', `fill="${H(cv, fur)}" ${L}`)
   cv.path('M44 56C24 64 16 96 20 132L40 134C40 106 46 86 56 74Z', `fill="${H(cv, fur)}" ${L}`)
@@ -370,7 +370,7 @@ function puppet(cv, o) {
 // ── 万毒岭 · 九首毒蟒（画三首）──
 {
   const cv = new Canvas()
-  cv.ellipse(90, 132, 84, 32, `fill="${cv.rad(C.grass4, 0.4)}"`)
+  cv.open('a-pulse'); cv.ellipse(90, 132, 84, 32, `fill="${cv.rad(C.grass4, 0.4)}"`); cv.close()
   shadow(cv, 90, 152, 66)
   const necks = ['M100 136C96 100 70 90 50 72C40 62 36 52 32 44', 'M110 132C112 96 104 70 96 48C92 38 94 28 96 20', 'M120 136C136 104 150 90 160 70C164 60 164 52 162 46']
   const heads = [[32, 44, 1], [96, 20, 1], [162, 46, -1]]
@@ -387,14 +387,14 @@ function puppet(cv, o) {
       <circle cx="-12" cy="-3" r="6" fill="${C.grass4}" fill-opacity=".3"/><ellipse cx="-12" cy="-3" rx="3" ry="2.6" fill="${C.grass4}" ${T}/><ellipse cx="-12" cy="-3" rx=".8" ry="2.2" fill="${C.line}"/>
       <path d="M-25 12q-1 5 1 8" fill="none" stroke="${C.grass4}" stroke-width="1.6" stroke-linecap="round"/><circle cx="-24" cy="22" r="1.4" fill="${C.grass4}"/></g>`, [[x - 32, y - 28], [x + 32, y + 24]])
   }
-  for (const [x, y] of [[60, 146], [130, 146], [96, 140]]) { cv.circle(x, y, 4, `fill="${cv.rad(C.grass4, 0.7)}"`); cv.circle(x, y, 1.4, `fill="${C.grass4}"`) }
+  for (const [x, y] of [[60, 146], [130, 146], [96, 140]]) { cv.open('a-pulse', x * 0.02); cv.circle(x, y, 4, `fill="${cv.rad(C.grass4, 0.7)}"`); cv.circle(x, y, 1.4, `fill="${C.grass4}"`); cv.close() }
   out('monster/ch5-hydra.svg', cv)
 }
 
 // ── 幽冥谷 · 化形阴尸（悬浮鬼影）──
 {
   const cv = new Canvas()
-  cv.ellipse(70, 80, 72, 84, `fill="${cv.rad(C.jade3, 0.45)}"`)
+  cv.open('a-pulse'); cv.ellipse(70, 80, 72, 84, `fill="${cv.rad(C.jade3, 0.45)}"`); cv.close()
   // 背后幽魂
   for (const [x, y, s] of [[24, 60, 1], [116, 56, -1]]) cv.path(`M${x} ${y}c${s * 6} -8 ${s * 14} -6 ${s * 14} 4c0 8 ${s * -4} 18 ${s * -10} 26c${s * 2} -8 ${s * -4} -14 ${s * -4} -30z`, `fill="${C.jade3}" fill-opacity=".25"`, [[x - 14, y - 8], [x + 14, y + 30]])
   const robeD = 'M44 44C30 70 24 110 16 150L30 138L38 156L50 140L62 158L74 142L86 156L96 138L112 150C104 110 98 70 84 44Z'
@@ -423,8 +423,10 @@ function puppet(cv, o) {
   for (let i = 0; i < 7; i++) cv.ellipse(20 - i * 2.4, 90 + i * 8, 2.8, 4, `fill="none" stroke="${C.line}" stroke-opacity=".5" stroke-width=".4"`)
   // 鬼火
   for (const [x, y] of [[124, 40], [14, 30], [118, 120], [30, 150]]) {
+    cv.open('a-float', x * 0.03)
     cv.circle(x, y, 10, `fill="${cv.rad(C.jade3, 0.6)}"`)
     cv.path(`M${x} ${y + 8}C${x - 7} ${y + 4} ${x - 4} ${y - 6} ${x} ${y - 12}C${x + 1} ${y - 6} ${x + 4} ${y - 5} ${x + 3} ${y - 9}C${x + 7} ${y - 2} ${x + 6} ${y + 5} ${x} ${y + 8}Z`, `fill="${cv.grad([[0, '#fff'], [0.4, C.jade3], [1, C.jade1]])}" ${T}`, [[x - 8, y - 12], [x + 8, y + 8]])
+    cv.close()
   }
   out('monster/ch6-undead.svg', cv)
 }
@@ -432,11 +434,13 @@ function puppet(cv, o) {
 // ── 星落原 · 坠星天兽 ──
 {
   const cv = new Canvas()
-  cv.ellipse(88, 80, 92, 74, `fill="${cv.rad(C.purple2, 0.45)}"`)
+  cv.open('a-pulse'); cv.ellipse(88, 80, 92, 74, `fill="${cv.rad(C.purple2, 0.45)}"`); cv.close()
   quadruped(cv, { body: C.blue1, belly: C.purple2, dark: C.blue0, accent: C.purple3, spikes: C.purple3, tail: 'flame', head: 'qilin', marks: 'stars' })
   for (const [x, y, r] of [[20, 16, 5], [150, 20, 4], [170, 100, 3.4], [100, 8, 3], [8, 100, 2.6]]) {
+    cv.open('a-flicker', x * 0.02)
     cv.circle(x, y, r * 2.6, `fill="${cv.rad(C.gold4, 0.6)}"`)
     cv.path(`M${x} ${y - r * 2}L${x + r * 0.4} ${y - r * 0.4}L${x + r * 2} ${y}L${x + r * 0.4} ${y + r * 0.4}L${x} ${y + r * 2}L${x - r * 0.4} ${y + r * 0.4}L${x - r * 2} ${y}L${x - r * 0.4} ${y - r * 0.4}Z`, `fill="${C.gold4}"`, [[x - r * 2, y - r * 2], [x + r * 2, y + r * 2]])
+    cv.close()
   }
   out('monster/ch8-starbeast.svg', cv)
 }
@@ -444,7 +448,7 @@ function puppet(cv, o) {
 // ── 宗门合围 · 结丹期凶兽（狻猊）──
 {
   const cv = new Canvas()
-  cv.ellipse(88, 80, 92, 74, `fill="${cv.rad(C.fire2, 0.38)}"`)
+  cv.open('a-pulse'); cv.ellipse(88, 80, 92, 74, `fill="${cv.rad(C.fire2, 0.38)}"`); cv.close()
   quadruped(cv, { body: C.jade0, belly: C.jade1, dark: C.ink2, mane: C.gold1, accent: C.gold3, tail: 'whip', head: 'lion', marks: 'fire' })
   out('monster/jiedan-beast.svg', cv)
 }
