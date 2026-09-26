@@ -12,10 +12,10 @@ import {
 } from './balance'
 
 export const RESOURCE_META: Record<ResourceKey, { name: string; icon: string; desc: string }> = {
-  lingshi: { name: '灵石', icon: 'icon/lingshi.webp', desc: '修真界通货，建造与交易之本' },
-  lingqi: { name: '灵气', icon: 'icon/lingqi.webp', desc: '修炼与突破境界所需' },
-  lingyao: { name: '灵药', icon: 'icon/lingyao.webp', desc: '炼丹材料，供养修士' },
-  kuanglingcai: { name: '矿灵材', icon: 'icon/kuanglingcai.webp', desc: '炼器材料，锻造法宝与傀儡' },
+  lingshi: { name: '灵石', icon: 'icon/lingshi.svg', desc: '修真界通货，建造与交易之本' },
+  lingqi: { name: '灵气', icon: 'icon/lingqi.svg', desc: '修炼与突破境界所需' },
+  lingyao: { name: '灵药', icon: 'icon/lingyao.svg', desc: '炼丹材料，供养修士' },
+  kuanglingcai: { name: '矿灵材', icon: 'icon/kuanglingcai.svg', desc: '炼器材料，锻造法宝与傀儡' },
 }
 
 export const BUILDINGS: BuildingDef[] = [
@@ -24,56 +24,56 @@ export const BUILDINGS: BuildingDef[] = [
   // ── 远排 ──
   {
     key: 'cangjing', name: '藏经阁', desc: '参研功法，解锁长期增益。',
-    produces: null, sprite: 'building/cangjing.webp',
+    produces: null, sprite: 'building/cangjing.svg',
     pos: { x: 20, y: 42 }, scale: 15, unlockAt: BUILDING_UNLOCK.cangjing,
   },
   {
     key: 'lianqi', name: '炼器阁', desc: '以矿灵材锻造法宝，提升部队战力。',
-    produces: null, sprite: 'building/lianqi.webp',
+    produces: null, sprite: 'building/lianqi.svg',
     pos: { x: 80, y: 44 }, scale: 20, unlockAt: BUILDING_UNLOCK.lianqi,
   },
   // ── 中排 ──
   {
     key: 'juling', name: '聚灵阵', desc: '汇聚天地灵气，持续产出灵气。',
-    produces: 'lingqi', sprite: 'building/juling-formation.webp',
+    produces: 'lingqi', sprite: 'building/juling-formation.svg',
     pos: { x: 21, y: 60 }, scale: 24, unlockAt: BUILDING_UNLOCK.juling,
   },
   {
     key: 'lingtian', name: '灵田', desc: '培植灵草，持续产出灵药。',
-    produces: 'lingyao', sprite: 'building/lingtian.webp',
+    produces: 'lingyao', sprite: 'building/lingtian.svg',
     pos: { x: 79, y: 61 }, scale: 26, unlockAt: BUILDING_UNLOCK.lingtian,
   },
   // ── 主建筑：居中偏上，体量最大 ──
   {
     key: 'dongfu', name: '洞府', desc: '你的立身之所。等级决定其余建筑的上限，也是突破境界的前置。',
-    produces: null, sprite: 'building/dongfu.webp',
-    pos: { x: 50, y: 66 }, scale: 30, unlockAt: BUILDING_UNLOCK.dongfu,
+    produces: null, sprite: 'building/dongfu.svg',
+    pos: { x: 50, y: 66 }, scale: 36, unlockAt: BUILDING_UNLOCK.dongfu,
   },
   // ── 近排 ──
   {
     key: 'kuangmai', name: '矿脉', desc: '开采地脉灵矿，持续产出矿灵材。',
-    produces: 'kuanglingcai', sprite: 'building/kuangmai.webp',
+    produces: 'kuanglingcai', sprite: 'building/kuangmai.svg',
     pos: { x: 22, y: 80 }, scale: 28, unlockAt: BUILDING_UNLOCK.kuangmai,
   },
   {
     key: 'fangshi', name: '坊市', desc: '与散修交易，持续产出灵石。',
-    produces: 'lingshi', sprite: 'building/fangshi.webp',
+    produces: 'lingshi', sprite: 'building/fangshi.svg',
     pos: { x: 78, y: 81 }, scale: 28, unlockAt: BUILDING_UNLOCK.fangshi,
   },
   {
     key: 'liandan', name: '炼丹房', desc: '以灵药炼制丹药，提升全局产出。',
-    produces: null, sprite: 'building/liandan.webp',
+    produces: null, sprite: 'building/liandan.svg',
     pos: { x: 50, y: 87 }, scale: 24, unlockAt: BUILDING_UNLOCK.liandan,
   },
   // ── 最近排 ──
   {
     key: 'yanwu', name: '演武场', desc: '操练傀儡、灵兽与符修。等级决定兵力上限。',
-    produces: null, sprite: 'building/yanwu.webp',
+    produces: null, sprite: 'building/yanwu.svg',
     pos: { x: 23, y: 99 }, scale: 30, unlockAt: BUILDING_UNLOCK.yanwu,
   },
   {
     key: 'zongmen', name: '宗门大殿', desc: '加入宗门，参与合围妖兽等协作玩法。',
-    produces: null, sprite: 'building/zongmen.webp',
+    produces: null, sprite: 'building/zongmen.svg',
     pos: { x: 77, y: 100 }, scale: 32, unlockAt: BUILDING_UNLOCK.zongmen,
   },
 ]
@@ -114,15 +114,15 @@ export const REALMS: RealmDef[] = REALM_SPECS.map(r => ({
 const TROOP_META: Record<TroopKey, { name: string; desc: string; sprite: string }> = {
   kuilei: {
     name: '傀儡兵', desc: '以矿灵材炼制的傀儡，重甲肉盾。克御兽军。',
-    sprite: 'troop/kuilei.webp',
+    sprite: 'troop/kuilei.svg',
   },
   yushou: {
     name: '御兽军', desc: '驱使灵兽冲阵，机动迅捷。克符修弓阵。',
-    sprite: 'troop/yushou.webp',
+    sprite: 'troop/yushou.svg',
   },
   fuxiu: {
     name: '符修弓阵', desc: '以灵力凝弓，远程齐射。克傀儡兵。',
-    sprite: 'troop/fuxiu.webp',
+    sprite: 'troop/fuxiu.svg',
   },
 }
 
@@ -148,22 +148,22 @@ export const COUNTER_BONUS = TUNE.counterBonus
 export const CULTIVATORS: CultivatorDef[] = [
   {
     key: 'hanli', name: '韩立（占位）', spec: 'kuilei',
-    desc: '谨慎多疑的散修，精于傀儡之道。', sprite: 'cultivator/hanli.webp',
+    desc: '谨慎多疑的散修，精于傀儡之道。', sprite: 'cultivator/hanli.svg',
     rarity: 3, baseBonus: 0.06,
   },
   {
     key: 'nangongwan', name: '南宫婉（占位）', spec: 'fuxiu',
-    desc: '符箓之道精深，符阵齐射无往不利。', sprite: 'cultivator/nangongwan.webp',
+    desc: '符箓之道精深，符阵齐射无往不利。', sprite: 'cultivator/nangongwan.svg',
     rarity: 3, baseBonus: 0.06,
   },
   {
     key: 'danxiu', name: '丹修·青元', spec: 'yushou',
-    desc: '以丹药温养灵兽，御兽冲阵愈勇。', sprite: 'cultivator/danxiu.webp',
+    desc: '以丹药温养灵兽，御兽冲阵愈勇。', sprite: 'cultivator/danxiu.svg',
     rarity: 2, baseBonus: 0.04,
   },
   {
     key: 'zhenxiu', name: '阵修·墨岩', spec: 'kuilei',
-    desc: '布阵而战，傀儡结阵坚不可摧。', sprite: 'cultivator/zhenxiu.webp',
+    desc: '布阵而战，傀儡结阵坚不可摧。', sprite: 'cultivator/zhenxiu.svg',
     rarity: 2, baseBonus: 0.04,
   },
 ]
@@ -183,14 +183,14 @@ export function cultivatorBonus(def: CultivatorDef, level: number): number {
 // 40 关 / 8 章。难度与奖励全部由 balance.ts 的曲线生成，
 // 这里只配章节主题与关卡文案 —— 手写数值必然与模拟器验证过的曲线脱节。
 const CHAPTERS: { name: string; sprite: string; flavor: string[] }[] = [
-  { name: '青牛谷', sprite: 'monster/ch1-serpent.webp', flavor: ['初入秘境，几只低阶妖兽游荡其间。', '灵泉旁盘踞着守泉的妖蟒。', '前人遗留的洞府，机关仍在运转。', '谷底雾气翻涌，隐有兽吼。', '谷主遗蜕所在，煞气未散。'] },
-  { name: '乱星海', sprite: 'monster/ch2-leviathan.webp', flavor: ['浓雾遮蔽视野，妖兽借雾突袭。', '沉没的修士渡船，怨灵未散。', '暗礁间游弋着成群的水属妖兽。', '漩涡深处传来低沉的鸣声。', '海眼之下，一头巨物正在苏醒。'] },
-  { name: '落霞涧', sprite: 'monster/ch3-firebird.webp', flavor: ['晚霞如血，涧中灵禽盘旋。', '断桥残骸下埋着旧日战场。', '火灵之气灼人，寻常修士难以久留。', '崖壁洞窟中传出铁器交击声。', '涧主是一头炼就内丹的赤焰雕。'] },
-  { name: '太岳山脉', sprite: 'monster/ch4-ape.webp', flavor: ['山道崎岖，土属妖兽善于伏击。', '古老的封印石碑已现裂痕。', '矿洞深处，傀儡守卫仍在巡逻。', '山腹中埋藏着上古阵法枢纽。', '镇山巨猿，力可裂石。'] },
-  { name: '万毒岭', sprite: 'monster/ch5-hydra.webp', flavor: ['瘴气弥漫，草木皆有剧毒。', '毒虫成群，防不胜防。', '腐尸遍野，此处曾有大战。', '毒潭中央立着一座残破祭坛。', '万毒之主，一条九头毒蟒。'] },
-  { name: '幽冥谷', sprite: 'monster/ch6-undead.webp', flavor: ['阴气森然，日光照不进来。', '鬼修的残魂在谷中游荡。', '枯骨堆成小山，怨念不散。', '幽冥井直通地脉，寒气刺骨。', '谷中主宰是一具化形阴尸。'] },
-  { name: '天南废墟', sprite: 'monster/ch7-warpuppet.webp', flavor: ['昔日仙城，如今只剩断壁。', '废墟下的宝库仍有禁制。', '守城傀儡历经千年仍未停止运转。', '城主府邸中残留着结丹级威压。', '废墟核心，一尊上古战傀苏醒。'] },
-  { name: '星落原', sprite: 'monster/ch8-starbeast.webp', flavor: ['陨石遍布，天地灵气紊乱。', '星力凝成的异兽在原野游荡。', '陨坑深处埋着一件残破法宝。', '星陨之夜，异兽尽数狂化。', '原野尽头，坠星所化的凶物盘踞于此。'] },
+  { name: '青牛谷', sprite: 'monster/ch1-serpent.svg', flavor: ['初入秘境，几只低阶妖兽游荡其间。', '灵泉旁盘踞着守泉的妖蟒。', '前人遗留的洞府，机关仍在运转。', '谷底雾气翻涌，隐有兽吼。', '谷主遗蜕所在，煞气未散。'] },
+  { name: '乱星海', sprite: 'monster/ch2-leviathan.svg', flavor: ['浓雾遮蔽视野，妖兽借雾突袭。', '沉没的修士渡船，怨灵未散。', '暗礁间游弋着成群的水属妖兽。', '漩涡深处传来低沉的鸣声。', '海眼之下，一头巨物正在苏醒。'] },
+  { name: '落霞涧', sprite: 'monster/ch3-firebird.svg', flavor: ['晚霞如血，涧中灵禽盘旋。', '断桥残骸下埋着旧日战场。', '火灵之气灼人，寻常修士难以久留。', '崖壁洞窟中传出铁器交击声。', '涧主是一头炼就内丹的赤焰雕。'] },
+  { name: '太岳山脉', sprite: 'monster/ch4-ape.svg', flavor: ['山道崎岖，土属妖兽善于伏击。', '古老的封印石碑已现裂痕。', '矿洞深处，傀儡守卫仍在巡逻。', '山腹中埋藏着上古阵法枢纽。', '镇山巨猿，力可裂石。'] },
+  { name: '万毒岭', sprite: 'monster/ch5-hydra.svg', flavor: ['瘴气弥漫，草木皆有剧毒。', '毒虫成群，防不胜防。', '腐尸遍野，此处曾有大战。', '毒潭中央立着一座残破祭坛。', '万毒之主，一条九头毒蟒。'] },
+  { name: '幽冥谷', sprite: 'monster/ch6-undead.svg', flavor: ['阴气森然，日光照不进来。', '鬼修的残魂在谷中游荡。', '枯骨堆成小山，怨念不散。', '幽冥井直通地脉，寒气刺骨。', '谷中主宰是一具化形阴尸。'] },
+  { name: '天南废墟', sprite: 'monster/ch7-warpuppet.svg', flavor: ['昔日仙城，如今只剩断壁。', '废墟下的宝库仍有禁制。', '守城傀儡历经千年仍未停止运转。', '城主府邸中残留着结丹级威压。', '废墟核心，一尊上古战傀苏醒。'] },
+  { name: '星落原', sprite: 'monster/ch8-starbeast.svg', flavor: ['陨石遍布，天地灵气紊乱。', '星力凝成的异兽在原野游荡。', '陨坑深处埋着一件残破法宝。', '星陨之夜，异兽尽数狂化。', '原野尽头，坠星所化的凶物盘踞于此。'] },
 ]
 
 const STAGE_SUFFIX = ['外围', '深处', '秘窟', '绝地', '核心']
@@ -225,9 +225,9 @@ export const STAGES: StageDef[] = Array.from({ length: 40 }, (_, i) => {
  * 升级的成就感会大打折扣 —— 这是 SLG 的标准做法。
  */
 export function dongfuSprite(level: number): string {
-  if (level >= 16) return 'building/dongfu-t3.webp'
-  if (level >= 8) return 'building/dongfu-t2.webp'
-  return 'building/dongfu.webp'
+  if (level >= 16) return 'building/dongfu-t3.svg'
+  if (level >= 8) return 'building/dongfu-t2.svg'
+  return 'building/dongfu.svg'
 }
 
 export { INITIAL_RESOURCES } from './balance'

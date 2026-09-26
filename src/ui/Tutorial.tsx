@@ -186,7 +186,7 @@ export function Tutorial() {
       >
         <img
           className="tut-portrait"
-          src={sprite(cur.pose === 'point' ? 'guide/lady-point.webp' : 'guide/lady-normal.webp')}
+          src={sprite(cur.pose === 'point' ? 'guide/lady-point.svg' : 'guide/lady-normal.svg')}
           alt={GUIDE_NAME}
         />
         <div className="tut-bubble">

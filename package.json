@@ -4,6 +4,7 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
+    "art": "node art/svg/buildings.mjs && node art/svg/backgrounds.mjs && node art/svg/icons.mjs && node art/svg/figures.mjs && node art/svg/beasts.mjs",
     "dev": "tsx server/dev.ts",
     "dev:web": "vite",
     "server": "tsx server/index.ts",

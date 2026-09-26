@@ -95,15 +95,15 @@ export interface PillDef {
 export const PILLS: PillDef[] = [
   {
     key: 'qi', name: '聚气丹', desc: '服下后资源产出大增',
-    sprite: 'item/pill-qi.webp', effect: 1.5, hours: 2, craftMinutes: 10,
+    sprite: 'item/pill-qi.svg', effect: 1.5, hours: 2, craftMinutes: 10,
   },
   {
     key: 'body', name: '淬体丹', desc: '服下后全军战力提升',
-    sprite: 'item/pill-body.webp', effect: 1.3, hours: 1, craftMinutes: 15,
+    sprite: 'item/pill-body.svg', effect: 1.3, hours: 1, craftMinutes: 15,
   },
   {
     key: 'mind', name: '凝神丹', desc: '服下后建造速度提升',
-    sprite: 'item/pill-mind.webp', effect: 1.6, hours: 3, craftMinutes: 20,
+    sprite: 'item/pill-mind.svg', effect: 1.6, hours: 3, craftMinutes: 20,
   },
 ]
 
@@ -145,15 +145,15 @@ export interface ArtifactDef {
 export const ARTIFACTS: ArtifactDef[] = [
   {
     key: 'sword', name: '青锋剑', desc: '符修弓阵战力',
-    sprite: 'item/artifact-sword.webp', spec: 'fuxiu', perLevel: 0.08, maxLevel: 15, requires: 1,
+    sprite: 'item/artifact-sword.svg', spec: 'fuxiu', perLevel: 0.08, maxLevel: 15, requires: 1,
   },
   {
     key: 'shield', name: '玄龟盾', desc: '傀儡兵战力',
-    sprite: 'item/artifact-shield.webp', spec: 'kuilei', perLevel: 0.08, maxLevel: 15, requires: 1,
+    sprite: 'item/artifact-shield.svg', spec: 'kuilei', perLevel: 0.08, maxLevel: 15, requires: 1,
   },
   {
     key: 'rope', name: '缚灵索', desc: '御兽军战力',
-    sprite: 'item/artifact-rope.webp', spec: 'yushou', perLevel: 0.08, maxLevel: 15, requires: 3,
+    sprite: 'item/artifact-rope.svg', spec: 'yushou', perLevel: 0.08, maxLevel: 15, requires: 3,
   },
 ]
 

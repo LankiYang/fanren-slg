@@ -36,7 +36,7 @@ export function SectPanel({ now }: { now: number }) {
     <div>
       <div className="section-title">合围妖兽</div>
       <div className="card">
-        <img className="thumb" src={sprite('monster/jiedan-beast.webp')} alt="" />
+        <img className="thumb" src={sprite('monster/jiedan-beast.svg')} alt="" />
         <div className="card-body">
           <div className="card-name">结丹期凶兽</div>
           <div className="card-meta">
@@ -123,7 +123,7 @@ function BossReportView({ report, onClose }: { report: BossReport; onClose: () =
       <ImpactFlash active={impact} />
       <div className="section-title">合围 · {report.tierName}</div>
       <img
-        src={sprite('monster/jiedan-beast.webp')}
+        src={sprite('monster/jiedan-beast.svg')}
         alt=""
         style={{ width: '58%', margin: '4px auto 10px', display: 'block' }}
         className={win && resultShown ? 'battle-boss defeated' : undefined}

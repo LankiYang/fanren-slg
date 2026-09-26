@@ -1,4 +1,4 @@
-// sprites 下是 optimize-sprites.cjs 从 art/masters/ 降采样转出的 WebP，PNG 母版不参与打包
+// sprites 下的素材由 art/svg/*.mjs 生成（npm run art），改图请改生成脚本而不是手改 SVG
 import { useEffect, useRef, useState } from 'react'
 
 /**
@@ -51,16 +51,17 @@ export function useCountUp(target: number, durationMs = 500): number {
   return display
 }
 
-const modules = import.meta.glob('../assets/sprites/**/*.webp', {
+const modules = import.meta.glob('../assets/sprites/**/*.svg', {
   eager: true,
   query: '?url',
   import: 'default',
 }) as Record<string, string>
 
-/** 把 data.ts 里写的相对路径（如 'building/dongfu.webp'）解析成打包后的实际 URL */
+const spriteIndex = new Map(Object.entries(modules).map(([p, url]) => [p.replace(/^.*\/sprites\//, ''), url]))
+
+/** 把 data.ts 里写的相对路径（如 'building/dongfu.svg'）解析成打包后的实际 URL */
 export function sprite(rel: string): string {
-  const hit = Object.entries(modules).find(([p]) => p.endsWith('/' + rel))
-  return hit ? hit[1] : ''
+  return spriteIndex.get(rel) ?? ''
 }
 
 /**

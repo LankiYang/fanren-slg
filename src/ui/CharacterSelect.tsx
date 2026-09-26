@@ -37,7 +37,7 @@ export function CharacterSelect() {
             >
               <div className="character-art-wrap">
                 <img
-                  src={sprite(option === 'female' ? 'guide/lady-normal.webp' : 'cultivator/hanli.webp')}
+                  src={sprite(option === 'female' ? 'guide/lady-normal.svg' : 'cultivator/hanli.svg')}
                   alt={option === 'female' ? '女修立绘' : '男修立绘'}
                   className="character-art"
                 />

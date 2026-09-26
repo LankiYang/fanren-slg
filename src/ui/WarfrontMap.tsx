@@ -31,7 +31,7 @@ export function WarfrontMap({ snapshot, selectedKey, now, onSelect, command }: W
       </div>
       <div className="warfront-map-stage">
         <div className="warfront-map-canvas">
-          <img className="warfront-map-terrain" src={sprite('bg/warfront-map.webp')} alt="" aria-hidden="true" />
+          <img className="warfront-map-terrain" src={sprite('bg/warfront-map.svg')} alt="" aria-hidden="true" />
           <div className="warfront-map-atmosphere" aria-hidden="true" />
           <div className="warfront-map-grid" aria-hidden="true" />
           <svg className="warfront-roads" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">

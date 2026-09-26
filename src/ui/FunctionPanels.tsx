@@ -31,7 +31,7 @@ export function GongfaPanel({ now }: { now: number }) {
 
       {busy && (
         <div className="card" style={{ borderColor: 'var(--teal)' }}>
-          <img className="thumb" src={sprite('item/scroll.webp')} alt="" />
+          <img className="thumb" src={sprite('item/scroll.svg')} alt="" />
           <div className="card-body">
             <div className="card-name" style={{ color: 'var(--teal)' }}>
               参研中：{GONGFA_MAP[busy.key]?.name}
@@ -65,7 +65,7 @@ export function GongfaPanel({ now }: { now: number }) {
         const cost = detail?.cost ?? {}
         return (
           <div className={'card' + (locked ? ' locked-card' : '')} key={g.key}>
-            <img className="thumb" src={sprite('item/scroll.webp')} alt="" />
+            <img className="thumb" src={sprite('item/scroll.svg')} alt="" />
             <div className="card-body">
               <div className="card-name">
                 {g.name} <span style={{ color: 'var(--text-dim)', fontSize: 11 }}>{lv}/{g.maxLevel}</span>

@@ -116,10 +116,10 @@ export default function App() {
 
       <nav className="tabbar" aria-label="主导航">
         {([
-          ['home', 'ui/tab-home.webp', '洞府'],
-          ['practice', 'ui/tab-army.webp', '历练'],
-          ['warfront', 'ui/tab-stage.webp', '战区'],
-          ['sect', 'ui/tab-sect.webp', '宗门'],
+          ['home', 'ui/tab-home.svg', '洞府'],
+          ['practice', 'ui/tab-army.svg', '历练'],
+          ['warfront', 'ui/tab-stage.svg', '战区'],
+          ['sect', 'ui/tab-sect.svg', '宗门'],
         ] as [Tab, string, string][]).map(([k, ico, label]) => (
           <button
             key={k}

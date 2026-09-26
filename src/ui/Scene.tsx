@@ -11,7 +11,7 @@ export function Scene({ now, onPick }: { now: number; onPick: (k: BuildingKey) =
 
   return (
     <div className="scene">
-      <img className="scene-bg" src={sprite('bg/main-valley.webp')} alt="" />
+      <img className="scene-bg" src={sprite('bg/main-valley.svg')} alt="" />
       <div className="scene-shade" />
 
       {/* 按地面线从远到近排序：近处建筑后渲染，自然遮挡远处（画家算法） */}

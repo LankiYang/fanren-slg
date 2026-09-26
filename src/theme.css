@@ -1,0 +1,210 @@
+/*
+ * 视觉主题层「青绿描金」：在 styles.css 之后加载，只改外观（色、边、字、质感），不动布局与交互。
+ * 设计语言与 art/svg/lib.mjs 的色板一致：墨青底、青绿点缀、金色描边做层级，朱砂只留给警示与战斗。
+ */
+:root {
+  --ink: #111c23;
+  --ink-2: #182731;
+  --panel: linear-gradient(180deg, rgba(27, 42, 50, .96), rgba(17, 28, 35, .96));
+  --panel-solid: #16242d;
+  --panel-lite: rgba(29, 45, 54, .9);
+  --gold: #e0bd78;
+  --gold-dim: #9c7a44;
+  --gold-line: rgba(224, 189, 120, .34);
+  --gold-line-strong: rgba(224, 189, 120, .62);
+  --teal: #5cc9b6;
+  --teal-dim: #2f7f78;
+  --jade-glow: rgba(92, 201, 182, .22);
+  --text: #ece4d2;
+  --text-dim: #9fb0b3;
+  --danger: #e0715f;
+  --ok: #7cc68a;
+  --serif: "Noto Serif SC", "Source Han Serif SC", "Songti SC", "STSong", "SimSun", serif;
+  /* 四角描金：一枚 L 形回纹角花，用 background 贴在面板四角 */
+  --corner: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 14 14'%3E%3Cpath d='M1 13V1h12M4 10V4h6' fill='none' stroke='%23e0bd78' stroke-opacity='.75' stroke-width='1.4'/%3E%3C/svg%3E");
+  /* 极淡的祥云底纹，给大面积深色一点「纸」的呼吸感 */
+  --cloud: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 120 60'%3E%3Cpath d='M10 40c0-8 10-10 14-4 2-9 16-9 18 0 6-4 14 0 12 7M70 22c0-6 8-8 11-3 2-7 13-7 14 0 5-3 11 0 9 5' fill='none' stroke='%23e0bd78' stroke-opacity='.05' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");
+}
+
+body, .app { background: #0c161c; }
+.app { background: #0c161c var(--cloud); background-size: 240px 120px; }
+
+/* ── 标题统一用宋体：一眼区分「标题」和「说明」 ── */
+.realm-name, .sheet-title, .main-page-heading b, .account-gate-panel h1, .card-name,
+.guide-section-title, .journey-guide-chapter, .tut-name, .ceremony-name, .bld-tag {
+  font-family: var(--serif);
+}
+.sheet-title, .main-page-heading b { letter-spacing: 2px; font-weight: 700; }
+
+/* ── 顶栏资源：胶囊 + 圆形图标托 ── */
+.topbar { gap: 5px; padding: 8px 8px 7px; background: linear-gradient(180deg, rgba(12, 22, 28, .98) 55%, rgba(12, 22, 28, 0)); }
+.res {
+  border-radius: 999px;
+  padding: 3px 8px 3px 3px;
+  background: linear-gradient(180deg, rgba(31, 48, 57, .95), rgba(17, 28, 35, .95));
+  border: 1px solid var(--gold-line);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 2px 6px rgba(0, 0, 0, .3);
+}
+.res img { width: 24px; height: 24px; padding: 2px; border-radius: 50%; background: radial-gradient(circle, rgba(92, 201, 182, .18), rgba(0, 0, 0, .35) 72%); border: 1px solid rgba(224, 189, 120, .25); }
+.res-live { left: 3px; top: 3px; width: 24px; height: 24px; }
+.res-val { font-weight: 600; letter-spacing: .2px; }
+.res-full { border-color: rgba(224, 113, 95, .75); box-shadow: 0 0 0 1px rgba(224, 113, 95, .25), inset 0 0 10px rgba(224, 113, 95, .15); }
+
+/* ── 境界条：漆盒 + 描金角 ── */
+.realmbar {
+  background: var(--corner) left 3px top 3px / 10px no-repeat, var(--corner) right 3px bottom 3px / 10px no-repeat, var(--panel);
+  border: 1px solid var(--gold-line);
+  border-radius: 8px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .05), 0 4px 14px rgba(0, 0, 0, .35);
+}
+.realm-name { font-size: 16px; letter-spacing: 3px; background: linear-gradient(180deg, #fff0c8, #d9ae62); -webkit-background-clip: text; background-clip: text; color: transparent; }
+
+/* ── 按钮：主按钮是鎏金牌，副按钮是青玉片 ── */
+.btn-main, .btn-breakthrough {
+  background: linear-gradient(180deg, #f6dea0 0%, #dcb266 45%, #b88a44 100%);
+  color: #2b1d0a;
+  border: 1px solid #7d5b28;
+  box-shadow: inset 0 1px 0 rgba(255, 250, 225, .75), inset 0 -2px 0 rgba(90, 60, 20, .35), 0 3px 10px rgba(0, 0, 0, .35);
+  font-family: var(--serif);
+  letter-spacing: 2px;
+  text-shadow: 0 1px 0 rgba(255, 240, 200, .5);
+}
+.btn-main { border-radius: 8px; font-size: 15px; }
+.btn-breakthrough { border-radius: 6px; padding: 5px 12px; }
+.btn-main:disabled, .btn-breakthrough:disabled {
+  background: linear-gradient(180deg, #2a3a43, #1f2d35);
+  border-color: rgba(159, 176, 179, .2);
+  color: #6f8085;
+  box-shadow: none;
+  text-shadow: none;
+}
+.btn-sub {
+  background: linear-gradient(180deg, rgba(47, 127, 120, .28), rgba(22, 36, 45, .9));
+  border: 1px solid rgba(92, 201, 182, .38);
+  color: #d8efe8;
+  border-radius: 6px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .06);
+}
+.btn-sub:disabled { opacity: .5; }
+
+/* ── 卡片：暗漆底 + 左侧金线 + 圆玉底托的缩略图 ── */
+.card {
+  position: relative;
+  background: var(--panel);
+  border: 1px solid rgba(224, 189, 120, .18);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, .04), 0 3px 10px rgba(0, 0, 0, .25);
+}
+.card img.thumb {
+  border-radius: 50%;
+  padding: 4px;
+  background: radial-gradient(circle at 50% 40%, rgba(92, 201, 182, .22), rgba(8, 16, 20, .7) 70%);
+  border: 1px solid rgba(224, 189, 120, .35);
+  box-shadow: inset 0 0 8px rgba(0, 0, 0, .5);
+}
+.card-name { font-weight: 700; letter-spacing: .5px; }
+
+/* ── 底部弹层：顶部描金边 + 云纹 ── */
+.sheet-mask { background: rgba(4, 9, 12, .62); backdrop-filter: blur(2px); -webkit-backdrop-filter: blur(2px); }
+.sheet {
+  background: var(--cloud) 0 0 / 240px 120px, linear-gradient(180deg, #182a33, #111c23 140px);
+  border-top: 1px solid var(--gold-line-strong);
+  border-radius: 16px 16px 0 0;
+  box-shadow: 0 -10px 30px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 240, 200, .08);
+}
+.sheet::before {
+  content: '';
+  display: block;
+  width: 44px;
+  height: 4px;
+  margin: -6px auto 10px;
+  border-radius: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold-dim), transparent);
+}
+.sheet-head { padding-bottom: 8px; border-bottom: 1px solid rgba(224, 189, 120, .14); }
+.sheet-close { width: 28px; height: 28px; border-radius: 50%; border: 1px solid var(--gold-line); font-size: 16px; line-height: 1; display: grid; place-items: center; padding: 0; }
+
+/* ── 场景建筑牌匾：黑漆描金小匾，宋体 ── */
+.bld-tag {
+  margin-top: -2px;
+  padding: 2px 9px 2px;
+  font-size: 10.5px;
+  letter-spacing: 1px;
+  border-radius: 3px;
+  background: linear-gradient(180deg, rgba(30, 40, 44, .95), rgba(12, 20, 24, .95));
+  border: 1px solid rgba(224, 189, 120, .6);
+  color: #f1e6cc;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, .45), inset 0 1px 0 rgba(255, 240, 200, .12);
+}
+.bld-tag.busy { border-color: var(--teal); color: #bff2e7; }
+.bld-tag.ready { border-color: var(--ok); color: #d4f3d8; box-shadow: 0 0 10px rgba(124, 198, 138, .5); }
+.bld img { filter: drop-shadow(0 6px 6px rgba(6, 14, 18, .45)); }
+.bld-locked img { filter: grayscale(.7) brightness(.72) contrast(.9); opacity: .82; }
+.scene-shade { background: linear-gradient(180deg, rgba(12, 22, 28, .5) 0%, rgba(12, 22, 28, 0) 22%, rgba(12, 22, 28, 0) 70%, rgba(12, 22, 28, .45) 100%); }
+
+/* ── 场景悬浮卡（道途指南等） ── */
+.quest-track {
+  background: var(--corner) right 4px top 4px / 10px no-repeat, linear-gradient(180deg, rgba(24, 38, 46, .94), rgba(13, 22, 28, .94));
+  border: 1px solid var(--gold-line);
+  border-left: 3px solid var(--gold);
+  border-radius: 8px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, .35);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+/* ── 底部导航：黑漆底 + 顶部金线，激活项玉光托底 ── */
+.tabbar {
+  background: linear-gradient(180deg, #16252d, #0d171c);
+  border-top: 1px solid var(--gold-line-strong);
+  box-shadow: 0 -6px 18px rgba(0, 0, 0, .4);
+}
+.tab { position: relative; border-top: 0; font-family: var(--serif); letter-spacing: 2px; padding: 8px 0 10px; }
+.tab::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  width: 0;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--gold), transparent);
+  transform: translateX(-50%);
+  transition: width .2s;
+}
+.tab.on::before { width: 64%; }
+.tab.on { color: #f3dca6; }
+.tab-ico { width: 26px; height: 26px; }
+.tab.on .tab-ico { filter: drop-shadow(0 0 6px rgba(224, 189, 120, .55)); }
+.tab.on::after {
+  content: '';
+  position: absolute;
+  inset: 4px 22% auto;
+  height: 30px;
+  border-radius: 50%;
+  background: radial-gradient(ellipse, rgba(224, 189, 120, .18), transparent 70%);
+  pointer-events: none;
+}
+
+/* ── 页面标题：前置一枚菱形金饰 ── */
+.main-page-heading b::before { content: '◆'; margin-right: 6px; font-size: 10px; color: var(--gold-dim); vertical-align: 2px; }
+
+/* ── 进度条 / 滑条：金线槽 ── */
+.slider { accent-color: var(--gold); }
+
+/* ── 登录页：用洞府背景做底 ── */
+.account-gate-panel {
+  background: var(--corner) left 6px top 6px / 14px no-repeat, var(--corner) right 6px bottom 6px / 14px no-repeat, linear-gradient(180deg, rgba(27, 42, 50, .95), rgba(14, 24, 30, .96));
+  border: 1px solid var(--gold-line-strong);
+  border-radius: 14px;
+  box-shadow: 0 20px 50px rgba(0, 0, 0, .5), inset 0 1px 0 rgba(255, 240, 200, .08);
+}
+.account-gate {
+  background: linear-gradient(180deg, rgba(8, 16, 22, .35), rgba(8, 16, 22, .85) 70%), url('./assets/sprites/bg/main-valley.svg') center / cover no-repeat, #0c161c;
+}
+.account-gate-panel h1, .character-select h1 { font-family: var(--serif); letter-spacing: 3px; }
+.account-gate-mark { color: var(--gold); font-family: var(--serif); letter-spacing: 4px; }
+.character-select {
+  background: var(--corner) left 6px top 6px / 14px no-repeat, var(--corner) right 6px bottom 6px / 14px no-repeat, var(--cloud) 0 0 / 240px 120px, linear-gradient(160deg, #1b303a, #0f1a21);
+  border-color: var(--gold-line-strong);
+  border-radius: 14px;
+}

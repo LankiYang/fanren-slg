@@ -153,22 +153,24 @@ D30 时洞府 20/24、秘境 32/40 —— 内容未被打完，留有后续空�
 
 ### 美术素材生产流水线
 
-现有功能素材主要由 `gen-image.cjs` 生成（Cloudsway 网关 / `MaaS_Ge_3.1_flash_image_20260528`），流程为「写 prompt → 生图 → 视觉检验 → 抠底 → 裁边 → 压缩」；战区俯视底图是独立的无文字地图资产，使用同样的视觉检验和 WebP 压缩流程：
+全部素材是**代码生成的 SVG**，风格为「青绿山水 · 描金」：墨线描边、平涂 + 一层明暗、统一色板。生图 WebP 已全部退役（原来写实厚涂、卡通背景、扁平图标三种画风混在一起）。
 
 ```bash
-node gen-image.cjs --batch art/batch2-buildings.json   # 批量生成
-node remove-bg.cjs                                     # 抠白底（flood-fill，保护主体内部浅色）
-node trim.cjs                                          # 裁掉透明边距，否则 UI 里按百分比渲染会显得很小
-node optimize-sprites.cjs                              # 降采样 + 转 WebP，产出打包用素材
+npm run art        # 重新生成 src/assets/sprites/**/*.svg
 ```
 
-**目录分工**：前三步都在 `art/masters/`（PNG 母版工作区，29MB，已进 `.gitignore`）里原地进行；最后一步把母版降采样转成 `src/assets/sprites/**/*.webp`（0.76MB，入库并参与打包）。`src/ui/util.ts` 的 `sprite()` 用 `import.meta.glob` 匹配的是 `.webp`，**只有跑完第四步改动才会出现在页面上**。
+| 脚本 | 产出 |
+|---|---|
+| `art/svg/lib.mjs` | 色板 `C`、等距投影 `iso()`、长方体 `box()`、中式屋顶 `roof()`、青绿山石 `crag()`、松树/灌木等共用件 |
+| `art/svg/buildings.mjs` | 10 座建筑 + 洞府三档外观（等距视角） |
+| `art/svg/backgrounds.mjs` | 洞府山谷竖版背景（河道和树木避开 `data.ts` 的建筑落点）、战区舆图 |
+| `art/svg/icons.mjs` | 资源图标、丹药/法宝/卷轴、底部页签图标（固定 64 画布） |
+| `art/svg/figures.mjs` | 修士、引导仙子、符修（统一半 Q 版人物骨架） |
+| `art/svg/beasts.mjs` | 傀儡、御兽、各章妖兽（我方朝右、妖兽朝左，战斗里面对面） |
 
-风格统一靠 prompt 里固定的风格后缀：等距 3/4 俯视、纯白底、左上打光、青绿+暖金配色。`art/*.json` 是各批次的 prompt 存档，改素材时照着改再重跑即可。
+**约定**：只从 `lib.mjs` 的色板取色；改图改生成脚本，不要手改 SVG；建筑 viewBox 由包围盒自动裁到贴边（场景按底边中点落地，留白会让建筑“飘”）。UI 的配色、描金边框和宋体标题集中在 `src/theme.css`，它在 `styles.css` 之后加载，只改外观不改布局。
 
-降采样档位按实际渲染尺寸 ×3（覆盖 3x DPR）定：建筑最大边 512（场景里最大占 32% 屏宽 ≈154px）、修士/兵种/妖兽 256（都是 54×54 缩略图）、图标 128（顶栏 20×20）。背景图是唯一**按高度**限制的——横图用 `object-fit: cover` 填竖屏时绑定轴是高度而非宽度，按宽度限制反而会把它压到需要放大 1.23× 才能铺满，所以保住母版原生的 768 高。
-
-**母版不在仓库里**：`art/masters/` 被 gitignore，克隆下来的仓库只有 WebP 成品。要重新生成或调整素材，需要先拿到母版（或用 `gen-image.cjs` 重跑）。
+`gen-image.cjs` / `remove-bg.cjs` / `trim.cjs` / `optimize-sprites.cjs` 和 `art/*.json` 是旧生图流水线的遗留，已不参与打包。
 
 ## 世界观 / 人设 / 剧情核实状态(2026-09-17)
 

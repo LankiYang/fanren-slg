@@ -29,27 +29,27 @@ export interface ExpeditionThemeDef {
 export const EXPEDITION_THEMES: ExpeditionThemeDef[] = [
   {
     key: 'star-sea', name: '星坠海', tagline: '潮汐卷走旧日仙舟，星火在海眼下重新燃起。',
-    sprite: 'monster/ch2-leviathan.webp', bossName: '吞星海侯', bossTroop: 'yushou', difficulty: 0.98,
+    sprite: 'monster/ch2-leviathan.svg', bossName: '吞星海侯', bossTroop: 'yushou', difficulty: 0.98,
     flavors: ['潮声里藏着古老的号角。', '沉船的阵盘仍在微弱运转。', '海雾后有成群灵兽游过。', '海眼正在吞噬附近的灵脉。'],
   },
   {
     key: 'red-ravine', name: '赤霞天堑', tagline: '地火烧穿山脉，只有最快的队伍能带走灵焰。',
-    sprite: 'monster/ch3-firebird.webp', bossName: '赤霞焚天雀', bossTroop: 'fuxiu', difficulty: 1.04,
+    sprite: 'monster/ch3-firebird.svg', bossName: '赤霞焚天雀', bossTroop: 'fuxiu', difficulty: 1.04,
     flavors: ['岩缝中喷出的火舌照亮了古道。', '断桥下埋着一枚未熄的火种。', '热浪让符纸自行燃烧。', '山壁深处传来兵刃交击声。'],
   },
   {
     key: 'poison-mire', name: '万毒迷泽', tagline: '每一处绿意都可能是毒瘴，谨慎与贪婪只隔一念。',
-    sprite: 'monster/ch5-hydra.webp', bossName: '九首吞灵蟒', bossTroop: 'kuilei', difficulty: 1.08,
+    sprite: 'monster/ch5-hydra.svg', bossName: '九首吞灵蟒', bossTroop: 'kuilei', difficulty: 1.08,
     flavors: ['雾中的脚印比来路多了一倍。', '毒潭边长着难得一见的灵草。', '腐木下有新的巢穴正在成形。', '祭坛上的血色符文突然亮起。'],
   },
   {
     key: 'ancient-city', name: '天南古城', tagline: '千年城阵尚未沉睡，遗宝与守卫同时等待来客。',
-    sprite: 'monster/ch7-warpuppet.webp', bossName: '古城镇界傀', bossTroop: 'kuilei', difficulty: 1.12,
+    sprite: 'monster/ch7-warpuppet.svg', bossName: '古城镇界傀', bossTroop: 'kuilei', difficulty: 1.12,
     flavors: ['残墙上的城防禁制仍在巡弋。', '废墟商铺里传出灵石碰撞声。', '一座无人操控的傀儡拦住了去路。', '城主府的星图指向地底。'],
   },
   {
     key: 'fallen-star', name: '坠星原', tagline: '星骸改变了天地法则，首领正在等一支敢于深入的军阵。',
-    sprite: 'monster/ch8-starbeast.webp', bossName: '坠星天兽', bossTroop: 'yushou', difficulty: 1.16,
+    sprite: 'monster/ch8-starbeast.svg', bossName: '坠星天兽', bossTroop: 'yushou', difficulty: 1.16,
     flavors: ['陨石带来的灵压让兵阵短暂失衡。', '星尘落在法宝上，发出清脆回响。', '异兽沿着陨坑边缘窥视队伍。', '远处的天空裂开了一道缝隙。'],
   },
 ]

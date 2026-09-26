@@ -21,9 +21,9 @@ export const RARITY_META: Record<EquipmentRarity, { name: string; color: string 
 }
 
 export const EQUIPMENT_SLOT_META: Record<EquipmentSlot, { name: string; icon: string }> = {
-  weapon: { name: '灵兵', icon: 'item/artifact-sword.webp' },
-  armor: { name: '法衣', icon: 'item/artifact-shield.webp' },
-  accessory: { name: '灵佩', icon: 'item/artifact-rope.webp' },
+  weapon: { name: '灵兵', icon: 'item/artifact-sword.svg' },
+  armor: { name: '法衣', icon: 'item/artifact-shield.svg' },
+  accessory: { name: '灵佩', icon: 'item/artifact-rope.svg' },
 }
 
 export const SEEK_MILESTONES = [
