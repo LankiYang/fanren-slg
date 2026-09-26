@@ -26,86 +26,170 @@ function mist(cv, x, y, w, h, o = 0.35) {
   cv.path(`M${f(x)} ${f(y)}h${f(w)}a${f(h / 2)} ${f(h / 2)} 0 0 1 0 ${f(h)}h${f(-w)}a${f(h / 2)} ${f(h / 2)} 0 0 1 0 ${f(-h)}z`, `fill="#eef4ee" fill-opacity="${o}"`)
 }
 
+/** 祥云：三卷云头 + 拖尾，金线勾边 */
+function cloud(cv, x, y, s = 1, o = 0.9) {
+  const S = v => f(v * s)
+  const d = `M${x} ${y}c${S(-4)} ${S(-10)} ${S(8)} ${S(-16)} ${S(14)} ${S(-8)}c${S(2)} ${S(-12)} ${S(20)} ${S(-12)} ${S(20)} ${S(0)}c${S(8)} ${S(-6)} ${S(18)} ${S(0)} ${S(14)} ${S(8)}h${S(40)}q${S(6)} 0 ${S(6)} ${S(4)}h${S(-100)}q${S(-4)} 0 ${S(6)} ${S(-4)}z`
+  cv.path(d, `fill="#f4efe0" fill-opacity="${o}" stroke="${C.gold2}" stroke-opacity=".7" stroke-width="1"`, [[x - 6 * s, y - 20 * s], [x + 70 * s, y + 6 * s]])
+  cv.path(`M${f(x + 4 * s)} ${f(y - 2 * s)}c${S(0)} ${S(-5)} ${S(6)} ${S(-7)} ${S(8)} ${S(-3)}M${f(x + 20 * s)} ${f(y - 4 * s)}c${S(1)} ${S(-6)} ${S(9)} ${S(-6)} ${S(10)} ${S(-1)}`, `fill="none" stroke="${C.gold2}" stroke-opacity=".6" stroke-width=".9"`)
+}
+/** 仙鹤：白身、黑翎、丹顶，展翅剪影 */
+function crane(cv, x, y, s = 1, flip = 1) {
+  const g = new Canvas()
+  g.path('M0 0C8 -2 16 -1 24 2C18 3 10 3 0 0Z', `fill="#f7f3ea" stroke="${C.line}" stroke-width=".6"`)
+  g.path('M6 0C4 -10 -2 -18 -14 -22C-6 -14 -2 -8 2 0Z', `fill="#f7f3ea" stroke="${C.line}" stroke-width=".6"`)
+  g.path('M-14 -22C-8 -19 -4 -16 -2 -12L-8 -17Z', `fill="${C.line}"`)
+  g.path('M12 0C14 -9 22 -16 34 -18C26 -10 20 -4 16 1Z', `fill="#f7f3ea" stroke="${C.line}" stroke-width=".6"`)
+  g.path('M34 -18C28 -16 24 -12 22 -8L27 -13Z', `fill="${C.line}"`)
+  g.path('M0 0Q-6 -2 -12 1', `fill="none" stroke="#f7f3ea" stroke-width="1.6" stroke-linecap="round"`)
+  g.path('M0 0Q-6 -2 -12 1', `fill="none" stroke="${C.line}" stroke-width=".5"`)
+  g.circle(-12, 1, 1.2, `fill="${C.red2}"`)
+  g.path('M-12 1l-5 1.2', `stroke="${C.gold1}" stroke-width=".8"`)
+  g.path('M24 2l10 3M24 2l10 1', `stroke="${C.line}" stroke-width=".6"`)
+  cv.add(`<g transform="translate(${x} ${y}) scale(${f(s * flip)} ${f(s)})">${g.parts.join('')}</g>`, [[x - 20 * s, y - 25 * s], [x + 40 * s, y + 8 * s]])
+}
+/** 远景小塔（剪影） */
+function farPagoda(cv, x, y, s = 1, col = '#5d8584') {
+  for (let i = 0; i < 5; i++) {
+    const w = (10 - i * 1.4) * s, yy = y - i * 7 * s
+    cv.path(`M${f(x - w)} ${f(yy)}Q${f(x)} ${f(yy - 3 * s)} ${f(x + w)} ${f(yy)}L${f(x + w * 0.6)} ${f(yy - 2.4 * s)}H${f(x - w * 0.6)}Z`, `fill="${col}"`)
+    cv.path(`M${f(x - w * 0.55)} ${f(yy - 2.4 * s)}h${f(w * 1.1)}v${f(-4.6 * s)}h${f(-w * 1.1)}z`, `fill="${col}" fill-opacity=".85"`)
+  }
+  cv.path(`M${f(x)} ${f(y - 35 * s)}v${f(-6 * s)}`, `stroke="${col}" stroke-width="${f(1.2 * s)}"`)
+}
+
 function valley() {
   const cv = new Canvas()
   const W = 600, H = 1200
-  cv.def(lin('sky', [[0, '#16283a'], [0.45, '#35606a'], [0.8, '#c9b48a'], [1, '#e9d3a2']]))
-  cv.def(lin('far', [[0, '#7fa9a6'], [1, '#b9cdbf']]))
+  seed = 7
+  cv.def(lin('sky', [[0, '#132433'], [0.3, '#28505c'], [0.58, '#6f9993'], [0.8, '#d9c393'], [1, '#f0dcae']]))
+  cv.def(lin('far', [[0, '#8fb5ae'], [1, '#c3d3c4']]))
+  cv.def(lin('far2', [[0, '#6c9d97'], [1, '#a8c2b4']]))
   cv.def(lin('mid', [[0, C.jade2], [0.5, '#3f8a82'], [1, '#6f9c8a']]))
-  cv.def(lin('near', [[0, C.jade1], [0.6, C.blue1], [1, '#35584f']]))
-  cv.def(lin('ground', [[0, '#6f9a6a'], [0.25, '#557f55'], [0.7, '#3d6446'], [1, '#243d33']]))
-  cv.def(lin('river', [[0, '#cfeee4'], [0.5, '#8fcfc0'], [1, '#5fa6a0']]))
+  cv.def(lin('ground', [[0, '#7ea46f'], [0.2, '#5f8a5a'], [0.6, '#44694a'], [1, '#243d33']]))
+  cv.def(lin('river', [[0, '#d8f2ea'], [0.4, '#8fcfc0'], [1, '#4f9a96']]))
   cv.def(glow('sun', '#fff3cf', 0.9))
   cv.def(lin('vig', [[0, '#0b1219', 0], [0.75, '#0b1219', 0], [1, '#0b1219', 0.55]]))
 
   cv.path(`M0 0H${W}V${H}H0Z`, 'fill="url(#sky)"')
-  cv.circle(440, 250, 110, 'fill="url(#sun)"')
-  cv.circle(440, 250, 34, 'fill="#fff6dc" fill-opacity=".9"')
-  // 飞鸟
-  for (const [x, y, s] of [[150, 170, 1], [178, 186, 0.8], [204, 162, 0.7]]) cv.path(`M${x} ${y}q${6 * s} ${-5 * s} ${12 * s} 0q${6 * s} ${-5 * s} ${12 * s} 0`, `fill="none" stroke="${C.ink2}" stroke-width="1.6" stroke-linecap="round"`)
+  // 天光：日轮 + 日晕 + 光束
+  cv.circle(440, 250, 150, 'fill="url(#sun)"')
+  for (let i = 0; i < 7; i++) { const a = -2.6 + i * 0.36; cv.path(`M440 250L${f(440 + Math.cos(a) * 420)} ${f(250 + Math.sin(a) * 420)}L${f(440 + Math.cos(a + 0.08) * 420)} ${f(250 + Math.sin(a + 0.08) * 420)}Z`, `fill="#fff5d6" fill-opacity=".06"`) }
+  cv.circle(440, 250, 36, 'fill="#fff6dc" fill-opacity=".95"')
+  cv.circle(440, 250, 42, 'fill="none" stroke="#fff6dc" stroke-opacity=".4" stroke-width="2"')
+  // 高空云带
+  for (const [x, y, sc, o] of [[40, 120, 1.3, 0.55], [300, 90, 1, 0.45], [470, 170, 1.1, 0.5], [120, 230, 0.8, 0.4]]) cloud(cv, x, y, sc, o)
+  crane(cv, 170, 190, 0.9); crane(cv, 215, 212, 0.65); crane(cv, 250, 176, 0.5)
 
-  // 远山三层，由淡到浓
-  ridge(cv, 250, [[20, 300], [80, 230], [130, 280], [190, 200], [250, 270], [300, 240], [360, 290], [420, 210], [500, 280], [560, 230], [620, 290]], 'url(#far)', 'fill-opacity=".85"')
-  mist(cv, 40, 300, 220, 22, 0.45); mist(cv, 330, 320, 240, 20, 0.4)
-  ridge(cv, 300, [[-10, 330], [40, 250], [90, 320], [150, 290], [210, 350], [270, 310], [330, 360], [400, 300], [450, 250], [510, 320], [610, 270]], 'url(#mid)')
-  // 中景瀑布
-  cv.path('M292 316q8 -4 16 0L318 420h-32z', `fill="#e7f6f0" fill-opacity=".85"`)
-  cv.path('M298 320L296 416M306 320L310 416', `stroke="#fff" stroke-opacity=".7" stroke-width="1.4"`)
-  mist(cv, 250, 400, 120, 20, 0.55)
-  // 近山两侧夹峙：用青绿山石，把山谷「框」起来
-  crag(cv, 30, 470, 220, [[-60, -250], [-10, -190], [50, -130]], 'bgL')
-  crag(cv, 580, 460, 240, [[-60, -120], [0, -210], [60, -280]], 'bgR')
-  mist(cv, -40, 420, 260, 26, 0.5); mist(cv, 380, 430, 280, 24, 0.5)
+  // 远山：三层，最远层带宝塔剪影与皴线
+  ridge(cv, 250, [[20, 300], [80, 222], [130, 280], [190, 190], [250, 262], [300, 232], [360, 286], [420, 200], [500, 276], [560, 226], [620, 290]], 'url(#far)', 'fill-opacity=".9"')
+  farPagoda(cv, 190, 198, 0.7, '#7aa19c')
+  for (let i = 0; i < 40; i++) { const x = rnd() * W, y = 240 + rnd() * 70; cv.path(`M${f(x)} ${f(y)}q2 6 0 12`, `fill="none" stroke="#5e8883" stroke-opacity=".35" stroke-width=".8"`) }
+  mist(cv, 20, 296, 240, 20, 0.5); mist(cv, 320, 312, 260, 20, 0.45)
+  ridge(cv, 280, [[-10, 330], [30, 270], [70, 300], [120, 256], [170, 318], [230, 290], [290, 330], [350, 300], [410, 262], [470, 314], [540, 280], [610, 320]], 'url(#far2)')
+  for (let i = 0; i < 18; i++) { const x = 10 + i * 34 + rnd() * 10, y = 300 + rnd() * 26; cv.path(`M${f(x)} ${f(y)}l3 -8 3 8z`, `fill="#4f7f78" fill-opacity=".6"`) }
+  ridge(cv, 300, [[-10, 340], [40, 262], [90, 320], [150, 292], [210, 350], [270, 312], [330, 360], [400, 302], [450, 256], [510, 322], [610, 276]], 'url(#mid)')
+  // 中景瀑布（分三叠）
+  cv.path('M292 316q8 -4 16 0L318 420h-32z', `fill="#e7f6f0" fill-opacity=".9"`)
+  for (const dx of [-8, -3, 2, 7]) cv.path(`M${300 + dx * 0.4} 320L${300 + dx} 416`, `stroke="#fff" stroke-opacity=".7" stroke-width="1" stroke-dasharray="10 4"`)
+  for (const y of [350, 386]) cv.path(`M288 ${y}q14 -6 28 0`, `fill="none" stroke="#fff" stroke-opacity=".6" stroke-width="2"`)
+  mist(cv, 240, 400, 140, 22, 0.6)
+  // 近山夹峙（青绿山石）
+  crag(cv, 30, 470, 230, [[-60, -260], [-10, -196], [52, -132]], 'bgL', { seed: 31 })
+  crag(cv, 580, 460, 250, [[-64, -124], [0, -214], [62, -290]], 'bgR', { seed: 37 })
+  const pineOn = (x, y, sc, dark = false) => { const g = new Canvas(); pine(g, 0, 0, sc, dark); cv.embed(g, x, y) }
+  pineOn(60, 300, 0.7, true); pineOn(530, 250, 0.8, true); pineOn(560, 330, 0.6, true); pineOn(14, 360, 0.7, true)
+  mist(cv, -40, 420, 280, 26, 0.55); mist(cv, 360, 432, 300, 24, 0.55)
 
   // 山谷地面
   cv.path(`M0 430C120 400 220 420 300 412C390 404 500 420 ${W} 432V${H}H0Z`, 'fill="url(#ground)"')
-  // 远处梯田纹理
-  for (let i = 0; i < 6; i++) {
-    const y = 440 + i * 14
-    cv.path(`M${40 + i * 6} ${y}C150 ${y - 8} 220 ${y + 6} 260 ${y - 2}M${350 - i * 4} ${y + 2}C420 ${y - 6} 500 ${y + 6} ${570 - i * 5} ${y - 2}`, `fill="none" stroke="#b9d98f" stroke-opacity="${0.35 - i * 0.04}" stroke-width="1.4"`)
+  // 远处梯田：一层层带亮边的田埂
+  for (let i = 0; i < 7; i++) {
+    const y = 440 + i * 13
+    for (const [x0, x1] of [[34 + i * 6, 262], [346 - i * 4, 574 - i * 5]]) {
+      cv.path(`M${x0} ${y}C${x0 + 70} ${y - 8} ${x1 - 60} ${y + 6} ${x1} ${y - 2}`, `fill="none" stroke="#dbeaa8" stroke-opacity="${f(0.45 - i * 0.05)}" stroke-width="1.4"`)
+      cv.path(`M${x0} ${y + 2}C${x0 + 70} ${y - 6} ${x1 - 60} ${y + 8} ${x1} ${y}`, `fill="none" stroke="#2f5a3a" stroke-opacity="${f(0.35 - i * 0.04)}" stroke-width="1"`)
+    }
+  }
+  // 远处小村：几户青瓦
+  for (const [x, y] of [[96, 452], [118, 458], [480, 448], [506, 455]]) {
+    cv.path(`M${x - 8} ${y}h16v-6h-16z`, `fill="#e3dac2"`)
+    cv.path(`M${x - 11} ${y - 5}Q${x} ${y - 8} ${x + 11} ${y - 5}L${x + 6} ${y - 11}H${x - 6}Z`, `fill="#3d5a62"`)
+    cv.path(`M${x - 2} ${y}v-4h4v4`, `fill="#5a3d2c"`)
   }
 
   // 河：从瀑布下流出，绕开建筑落点，从左侧流出画面
   const riverL = [[292, 420], [360, 500], [352, 590], [250, 660], [160, 780], [70, 850], [-20, 880]]
   const riverR = [[312, 420], [396, 506], [388, 610], [282, 690], [196, 810], [104, 890], [-20, 930]]
   const rp = [...riverL, ...riverR.slice().reverse()]
-  cv.path(smooth(rp, true), `fill="url(#river)" stroke="#2c5a58" stroke-width="2"`)
-  for (const [x, y, w] of [[330, 520, 26], [320, 610, 30], [230, 720, 34], [130, 830, 30], [60, 885, 26]]) cv.path(`M${x - w / 2} ${y}q${w / 4} -4 ${w / 2} 0t${w / 2} 0`, `fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="1.6" stroke-linecap="round"`)
-  // 石板路：从画面底部中轴通向洞府，再分叉到两侧建筑排
-  const road = `M300 1210C296 1100 310 990 300 890C292 850 300 820 300 800`
-  cv.path(road, `fill="none" stroke="#2a3a30" stroke-width="36" stroke-linecap="round" stroke-opacity=".35"`)
-  cv.path(road, `fill="none" stroke="#c9b996" stroke-width="28" stroke-linecap="round"`)
-  cv.path(road, `fill="none" stroke="#a8966f" stroke-width="28" stroke-dasharray="3 16" stroke-linecap="butt"`)
-  for (const d of ['M300 960C240 970 190 990 150 1010', 'M300 960C360 970 410 990 450 1010', 'M300 720C250 720 190 740 140 760', 'M300 740C360 730 420 740 470 770']) {
-    cv.path(d, `fill="none" stroke="#c9b996" stroke-opacity=".75" stroke-width="16" stroke-linecap="round"`)
+  const bank = [...riverL.map(([x, y]) => [x - 5, y - 2]), ...riverR.slice().reverse().map(([x, y]) => [x + 5, y + 3])]
+  cv.path(smooth(bank, true), `fill="#b9a67c" stroke="#6e5c3c" stroke-opacity=".5" stroke-width="1"`)
+  cv.path(smooth(rp, true), `fill="url(#river)" stroke="#2c5a58" stroke-width="1.4"`)
+  for (let i = 0; i < 26; i++) {
+    const t = rnd(), k = Math.min(riverL.length - 2, Math.floor(t * (riverL.length - 1)))
+    const u = t * (riverL.length - 1) - k, a = riverL[k], b2 = riverL[k + 1], c = riverR[k], d = riverR[k + 1]
+    const x = (a[0] + (b2[0] - a[0]) * u) * 0.5 + (c[0] + (d[0] - c[0]) * u) * 0.5, y = (a[1] + (b2[1] - a[1]) * u) * 0.5 + (c[1] + (d[1] - c[1]) * u) * 0.5
+    const w = 8 + rnd() * 16
+    cv.path(`M${f(x - w / 2)} ${f(y)}q${f(w / 4)} -3 ${f(w / 2)} 0t${f(w / 2)} 0`, `fill="none" stroke="#fff" stroke-opacity="${f(0.35 + rnd() * 0.35)}" stroke-width="1.1" stroke-linecap="round"`)
   }
-  // 小拱桥
-  cv.path('M262 690q18 -22 40 -4', `fill="none" stroke="${C.line}" stroke-width="9" stroke-linecap="round"`)
-  cv.path('M262 690q18 -22 40 -4', `fill="none" stroke="${C.red2}" stroke-width="5" stroke-linecap="round"`)
+  // 河石与芦苇
+  for (const [x, y, r] of [[372, 560, 7], [338, 640, 5], [214, 748, 6], [120, 842, 7], [300, 600, 4]]) {
+    cv.path(`M${x - r} ${y}Q${x - r} ${y - r * 0.9} ${x} ${y - r}Q${x + r} ${y - r * 0.8} ${x + r} ${y}Z`, `fill="${C.stone2}" stroke="${C.line}" stroke-opacity=".6" stroke-width=".8"`)
+    cv.path(`M${x - r * 0.5} ${y - r * 0.7}q${r * 0.4} -0.3 ${r * 0.8} 0`, `fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".8"`)
+    cv.path(`M${x - r - 3} ${y + 1}q${r + 3} 3 ${r * 2 + 6} 0`, `fill="none" stroke="#fff" stroke-opacity=".5" stroke-width=".8"`)
+  }
+  for (const [x, y] of [[404, 520], [396, 630], [292, 710], [200, 830], [60, 900], [150, 776]]) {
+    for (let k = 0; k < 5; k++) cv.path(`M${x + k * 2} ${y}q${-2 + k} -8 ${-1 + k * 1.5} -${14 + k * 2}`, `fill="none" stroke="${k % 2 ? '#6f8e4a' : '#a9b86a'}" stroke-width="1" stroke-linecap="round"`)
+    cv.path(`M${x + 3} ${y - 16}q1 -3 0 -6`, `stroke="#8a6a3c" stroke-width="2.2" stroke-linecap="round"`)
+  }
+  // 石板路：中轴通向洞府 + 两侧分叉，逐块铺石
+  const flagstones = (pts, width, n) => {
+    for (let i = 0; i < n; i++) {
+      const t = i / (n - 1), k = Math.min(pts.length - 2, Math.floor(t * (pts.length - 1))), u = t * (pts.length - 1) - k
+      const x = pts[k][0] + (pts[k + 1][0] - pts[k][0]) * u, y = pts[k][1] + (pts[k + 1][1] - pts[k][1]) * u
+      const offs = width > 20 ? (i % 2 ? [-9, 6] : [-5, 10]) : [0]
+      for (const off of offs) {
+        const rx = (width > 20 ? 8 : 6) + rnd() * 2.4, ry = 4 + rnd() * 1.4, cx = x + off + (rnd() - 0.5) * 3
+        const pts = Array.from({ length: 7 }, (_, k) => { const a = k / 7 * Math.PI * 2 + rnd() * 0.4; return [cx + Math.cos(a) * rx * (0.85 + rnd() * 0.2), y + Math.sin(a) * ry * (0.85 + rnd() * 0.2)] })
+        cv.path(smooth(pts, true), `fill="${rnd() > 0.5 ? '#cdbf9c' : '#bfb08a'}" stroke="#6e5c3c" stroke-opacity=".55" stroke-width=".8"`)
+        cv.path(`M${f(cx - rx * 0.5)} ${f(y - ry * 0.5)}q${f(rx * 0.4)} -1 ${f(rx * 0.8)} 0`, `fill="none" stroke="#fff" stroke-opacity=".35" stroke-width=".7"`)
+      }
+    }
+  }
+  cv.path('M300 1210C296 1100 310 990 300 890C292 850 300 820 300 800', `fill="none" stroke="#3a4a36" stroke-opacity=".35" stroke-width="40" stroke-linecap="round"`)
+  flagstones([[300, 1200], [298, 1100], [306, 1000], [300, 900], [298, 850], [300, 806]], 30, 30)
+  flagstones([[300, 960], [240, 972], [190, 990], [150, 1008]], 12, 12)
+  flagstones([[300, 960], [360, 972], [410, 990], [450, 1008]], 12, 12)
+  flagstones([[292, 724], [240, 726], [190, 742], [140, 760]], 12, 12)
+  flagstones([[308, 740], [360, 732], [420, 744], [470, 770]], 12, 12)
+  // 拱桥：石拱 + 栏板
+  cv.path('M252 700Q282 664 312 694L312 700Q282 676 252 706Z', `fill="${C.stone3}" stroke="${C.line}" stroke-opacity=".7" stroke-width="1"`)
+  cv.path('M252 700Q282 664 312 694', `fill="none" stroke="${C.stone4}" stroke-width="1.2"`)
+  for (let i = 0; i <= 6; i++) { const t = i / 6, x = 252 + 60 * t, y = (1 - t) * (1 - t) * 700 + 2 * (1 - t) * t * 664 + t * t * 694; cv.path(`M${f(x)} ${f(y)}v-6`, `stroke="${C.stone4}" stroke-width="1.6"`) }
+  cv.path('M252 694Q282 658 312 688', `fill="none" stroke="${C.stone4}" stroke-width="1.4"`)
+  cv.path('M262 702a8 6 0 0 1 16 0', `fill="${C.ink}" fill-opacity=".5"`)
 
-  // 草丛点簇（避开建筑中心）
+  // 草叶与野花（避开建筑落点）
   seed = 11
-  for (let i = 0; i < 140; i++) {
-    const x = rnd() * W, y = 460 + rnd() * 740
-    const nearCol = [[0.21, 0.6], [0.79, 0.61], [0.5, 0.66], [0.22, 0.8], [0.78, 0.81], [0.5, 0.87], [0.23, 0.99], [0.77, 1], [0.2, 0.42], [0.8, 0.44]].some(([bx, by]) => Math.abs(x - bx * W) < 60 && y < by * H && y > by * H - 110)
-    if (nearCol) continue
-    cv.path(`M${f(x)} ${f(y)}l-3 -7m3 7l0 -9m0 9l4 -7`, `fill="none" stroke="${rnd() > 0.5 ? '#9cc57a' : '#2f4f3a'}" stroke-opacity=".7" stroke-width="1.4" stroke-linecap="round"`)
+  const avoid = (x, y) => [[0.21, 0.6], [0.79, 0.61], [0.5, 0.66], [0.22, 0.8], [0.78, 0.81], [0.5, 0.87], [0.23, 0.99], [0.77, 1], [0.2, 0.42], [0.8, 0.44]].some(([bx, by]) => Math.abs(x - bx * W) < 64 && y < by * H + 6 && y > by * H - 120)
+  for (let i = 0; i < 420; i++) {
+    const x = rnd() * W, y = 450 + rnd() * 750
+    if (avoid(x, y)) continue
+    const c = rnd() > 0.55 ? '#a8cf82' : rnd() > 0.5 ? '#2f4f3a' : '#6f9c5c'
+    cv.path(`M${f(x)} ${f(y)}q-1 -4 -3 -7m3 7q0 -5 1 -9m-1 9q2 -3 4 -6`, `fill="none" stroke="${c}" stroke-opacity=".75" stroke-width=".9" stroke-linecap="round"`)
+    if (rnd() > 0.93) { const pc = [C.red3, C.gold3, '#f4efe0', C.purple3][Math.floor(rnd() * 4)]; for (let k = 0; k < 4; k++) cv.circle(x + Math.cos(k * 1.57) * 1.4, y - 8 + Math.sin(k * 1.57) * 1.4, 1.1, `fill="${pc}"`); cv.circle(x, y - 8, 0.8, `fill="${C.gold2}"`) }
   }
-  // 边缘松与灌木：只放在建筑落点之间的空档
-  const trees = [[26, 520, 1.1], [576, 540, 1.2], [18, 700, 1.3], [585, 700, 1.3], [210, 520, 0.8], [400, 470, 0.7], [470, 900, 0.9], [590, 930, 1.3], [12, 1060, 1.4], [396, 1180, 1.1]]
-  for (const [x, y, s] of trees) {
-    const g = new Canvas(); pine(g, 0, 0, s)
-    cv.add(`<g transform="translate(${x} ${y})">${g.parts.join('')}</g>`)
-  }
-  for (const [x, y, s] of [[380, 560, 0.9], [224, 620, 0.9], [420, 860, 1], [180, 900, 0.9], [560, 1140, 1.1], [240, 1180, 1]]) {
-    const g = new Canvas(); bush(g, 0, 0, s)
-    cv.add(`<g transform="translate(${x} ${y})">${g.parts.join('')}</g>`)
-  }
-  // 石灯与散石
-  for (const [x, y] of [[270, 820], [330, 820]]) {
-    cv.path(`M${x - 4} ${y}h8v-14h-8z`, `fill="${C.stone2}" ${STROKE}`)
-    cv.path(`M${x - 7} ${y - 14}h14l-3 -8h-8z`, `fill="${C.stone3}" ${STROKE}`)
-    cv.circle(x, y - 18, 2.6, `fill="${C.fire3}"`)
+  // 边缘松与灌木
+  for (const [x, y, sc] of [[26, 520, 1.3], [576, 540, 1.4], [18, 700, 1.5], [585, 700, 1.5], [210, 520, 0.9], [400, 470, 0.8], [470, 900, 1], [590, 930, 1.5], [12, 1060, 1.6], [396, 1180, 1.2]]) pineOn(x, y, sc)
+  for (const [x, y, sc] of [[380, 560, 1], [224, 620, 1], [420, 860, 1.1], [180, 900, 1], [560, 1140, 1.2], [240, 1180, 1.1], [120, 1160, 1]]) { const g = new Canvas(); bush(g, 0, 0, sc, [C.grass1, C.grass2, C.grass3, rnd() > 0.5 ? C.red3 : undefined]); cv.embed(g, x, y) }
+  // 石灯
+  for (const [x, y] of [[270, 822], [330, 822]]) {
+    cv.path(`M${x - 6} ${y}h12v-3h-12z`, `fill="${C.stone2}" ${STROKE}`)
+    cv.path(`M${x - 2.4} ${y - 3}h4.8v-11h-4.8z`, `fill="${C.stone3}" ${STROKE}`)
+    cv.path(`M${x - 5} ${y - 14}h10v-8h-10z`, `fill="${C.stone3}" ${STROKE}`)
+    cv.path(`M${x - 2.4} ${y - 15.5}h4.8v-5h-4.8z`, `fill="${C.fire3}"`)
+    cv.circle(x, y - 18, 10, `fill="url(#sun)" fill-opacity=".7"`)
+    cv.path(`M${x - 8} ${y - 22}Q${x} ${y - 26} ${x + 8} ${y - 22}L${x} ${y - 30}Z`, `fill="${C.stone3}" ${STROKE}`)
   }
   cv.path(`M0 0H${W}V${H}H0Z`, 'fill="url(#vig)"')
   return cv.toString(0, [0, 0, W, H])
